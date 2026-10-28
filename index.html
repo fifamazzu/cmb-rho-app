@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0F0F11" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CMB RHO" />
+  <link rel="apple-touch-icon" href="/logo-cmb.png" />
+  <title>C.M.B. RHO 1969 — DR4 Girone K</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#FFFFFF] text-[#0F0F11] min-h-screen pb-24 font-sans select-none">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-30 bg-[#0F0F11] text-white border-b-4 border-[#CC2918] px-4 py-3 shadow-lg">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-full bg-[#CC2918] border-2 border-white flex items-center justify-center font-black text-xs overflow-hidden shrink-0">
+          <img src="/logo-cmb.png" alt="CMB" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerText='CMB';" />
+        </div>
+        <div>
+          <h1 class="font-black text-lg tracking-wider leading-none">
+            C.M.B. RHO <span class="text-[#CC2918]">1969</span>
+          </h1>
+          <p class="text-[11px] text-gray-400 mt-0.5">DR4 Lombardia • Girone K (85812)</p>
+        </div>
+      </div>
+      <button id="syncBtn" onclick="loadFipData()" class="bg-[#CC2918] active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+        Aggiorna FIP
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENUTO -->
+  <main class="max-w-md mx-auto px-4 pt-4 space-y-4">
+    <!-- Barra Stato -->
+    <div class="bg-[#0F0F11] text-white text-xs px-3.5 py-2.5 rounded-xl flex items-center justify-between">
+      <span>Sync FIP: <strong id="syncTime">Caricamento...</strong></span>
+      <a href="https://fip.it/risultati/?group=campionati-regionali&regione_codice=LO&comitato_codice=PVA&sesso=M&codice_campionato=2DM&codice_fase=1&codice_girone=85812" target="_blank" class="text-[#CC2918] font-bold underline">Sito Ufficiale FIP ↗</a>
+    </div>
+
+    <!-- Box Messaggi / Errori -->
+    <div id="errorBox" class="hidden bg-[#0F0F11] border-l-4 border-[#CC2918] text-white p-4 rounded-xl text-xs space-y-1"></div>
+
+    <!-- SEZIONE 1: PROSSIMA PARTITA -->
+    <section id="tab-next" class="space-y-4">
+      <div class="bg-[#0F0F11] text-white rounded-2xl p-5 shadow-lg border border-zinc-800">
+        <div class="flex items-center justify-between mb-3">
+          <span class="bg-[#CC2918] text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md">Prossima Gara C.M.B. RHO</span>
+          <span class="text-xs text-gray-400">Girone K</span>
+        </div>
+        <div id="nextMatchContent" class="py-6 text-center text-xs text-gray-400">
+          Lettura calendario ufficiale FIP in corso...
+        </div>
+      </div>
+    </section>
+
+    <!-- SEZIONE 2: CLASSIFICA -->
+    <section id="tab-standings" class="hidden">
+      <div class="bg-[#0F0F11] text-white rounded-2xl p-4 shadow-lg border border-zinc-800">
+        <h2 class="text-xs font-black uppercase tracking-wider text-[#CC2918] mb-3">Classifica Ufficiale FIP — Girone K</h2>
+        <div id="standingsContainer" class="text-xs text-gray-400 py-4 text-center">Caricamento classifica...</div>
+      </div>
+    </section>
+
+    <!-- SEZIONE 3: CALENDARIO E ARBITRI -->
+    <section id="tab-calendar" class="hidden space-y-3">
+      <div class="bg-[#0F0F11] text-white p-3 rounded-2xl flex items-center justify-between gap-2">
+        <select id="roundSelect" onchange="onRoundChange()" class="bg-zinc-900 text-white text-xs rounded-lg px-3 py-2 border border-zinc-700 w-full">
+          <option value="">Giornata Corrente FIP</option>
+        </select>
+        <button id="filterCmbBtn" onclick="toggleOnlyCmb()" class="text-xs font-bold px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-gray-300 shrink-0">
+          Solo CMB
+        </button>
+      </div>
+      <div id="matchesContainer" class="space-y-3"></div>
+    </section>
+
+    <!-- SEZIONE 4: PALESTRE -->
+    <section id="tab-gyms" class="hidden space-y-3">
+      <div class="bg-[#0F0F11] p-3 rounded-2xl">
+        <input id="gymSearch" type="text" oninput="renderGyms()" placeholder="Cerca squadra o palestra del Girone K..." class="bg-transparent text-white text-xs w-full focus:outline-none" />
+      </div>
+      <div id="gymsContainer" class="space-y-3"></div>
+    </section>
+  </main>
+
+  <!-- BARRA DI NAVIGAZIONE IN BASSO -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#0F0F11] border-t border-zinc-800 px-2 py-2">
+    <div class="max-w-md mx-auto grid grid-cols-4 gap-1 text-center">
+      <button onclick="switchTab('next')" id="nav-next" class="py-2 rounded-xl text-xs font-black text-[#CC2918]">Prossima</button>
+      <button onclick="switchTab('standings')" id="nav-standings" class="py-2 rounded-xl text-xs font-bold text-gray-400">Classifica</button>
+      <button onclick="switchTab('calendar')" id="nav-calendar" class="py-2 rounded-xl text-xs font-bold text-gray-400">Calendario</button>
+      <button onclick="switchTab('gyms')" id="nav-gyms" class="py-2 rounded-xl text-xs font-bold text-gray-400">Palestre</button>
+    </div>
+  </nav>
+
+  <script>
+    const GYMS = [
+      { team: "C.M.B. RHO", gym: "Molinello Play Village", address: "Via Trecate 46, Rho (MI)", query: "Molinello Play Village Via Trecate 46 Rho" },
+      { team: "SAN PAOLO RHO", gym: "Palestra San Paolo Rho", address: "Rho (MI)", query: "San Paolo Basket Rho Palestra" },
+      { team: "VICTOR BASKET RHO", gym: "Palestra Victor Basket Rho", address: "Rho (MI)", query: "Victor Basket Rho Palestra" },
+      { team: "UPN NERVIANO", gym: "Palestra Comunale Nerviano", address: "Nerviano (MI)", query: "Pallacanestro Nerviano Palestra" },
+      { team: "BASKET PARABIAGO", gym: "Palazzetto dello Sport Parabiago", address: "Via Carso, Parabiago (MI)", query: "Palazzetto dello Sport Via Carso Parabiago" },
+      { team: "CAPIT PERFORMANCE YELLOW MAGIC", gym: "Campo Capit Performance", address: "Lombardia", query: "Capit Performance Yellow Magic Basket" },
+      { team: "PALL. CERRO MAGGIORE", gym: "Palestra Comunale Cerro Maggiore", address: "Via Boccaccio, Cerro Maggiore (MI)", query: "Pallacanestro Cerro Maggiore Via Boccaccio" },
+      { team: "SG.SPORT ARESE", gym: "Centro Sportivo Davide Ancilotto", address: "Viale Resegone, Arese (MI)", query: "SG Sport Arese Basket" },
+      { team: "ARLUNESE GIALLO", gym: "Palestra Comunale Arluno", address: "Arluno (MI)", query: "Polisportiva Arlunese Basket Arluno" },
+      { team: "ARLUNESE BLU", gym: "Palestra Comunale Arluno", address: "Arluno (MI)", query: "Polisportiva Arlunese Basket Arluno" },
+      { team: "SANGIORGESE BASKET", gym: "PalaBertelli", address: "Via del Campaccio, San Giorgio su Legnano (MI)", query: "PalaBertelli San Giorgio su Legnano" },
+      { team: "S.LUIGI GARBAGNATE", gym: "Palestra OSL Garbagnate", address: "Garbagnate Milanese (MI)", query: "OSL Garbagnate Basket Palestra" }
+    ];
+
+    let state = { standings: [], matches: [], onlyCmb: false };
+
+    function switchTab(tab) {
+      ["next", "standings", "calendar", "gyms"].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
+        const btn = document.getElementById(`nav-${t}`);
+        btn.className = t === tab
+          ? "py-2 rounded-xl text-xs font-black text-[#CC2918]"
+          : "py-2 rounded-xl text-xs font-bold text-gray-400";
+      });
+    }
+
+    function openMaps(query) {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank");
+    }
+
+    async function loadFipData(queryParams = "") {
+      const btn = document.getElementById("syncBtn");
+      const errBox = document.getElementById("errorBox");
+      btn.innerText = "Sync...";
+      errBox.classList.add("hidden");
+
+      try {
+        const res = await fetch(`/api/fip${queryParams}`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Errore lettura FIP");
+
+        state.standings = data.standings || [];
+        state.matches = data.matches || [];
+        document.getElementById("syncTime").innerText = data.updatedAt;
+
+        if (data.availableRounds && data.availableRounds.length > 0 && !queryParams) {
+          const sel = document.getElementById("roundSelect");
+          sel.innerHTML = '<option value="">Giornata Corrente FIP</option>' +
+            data.availableRounds.map(r => `<option value="?codice_ar=${r.codice_ar}&giornata=${r.giornata}">${r.label}</option>`).join("");
+        }
+
+        renderNextMatch();
+        renderStandings();
+        renderMatches();
+      } catch (e) {
+        errBox.classList.remove("hidden");
+        errBox.innerHTML = `<strong class="text-[#CC2918]">Attenzione:</strong> ${e.message}`;
+      } finally {
+        btn.innerText = "Aggiorna FIP";
+      }
+    }
+
+    function onRoundChange() {
+      const val = document.getElementById("roundSelect").value;
+      loadFipData(val);
+    }
+
+    function toggleOnlyCmb() {
+      state.onlyCmb = !state.onlyCmb;
+      const btn = document.getElementById("filterCmbBtn");
+      btn.className = state.onlyCmb
+        ? "text-xs font-bold px-3 py-2 rounded-lg border border-[#CC2918] bg-[#CC2918] text-white shrink-0"
+        : "text-xs font-bold px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-gray-300 shrink-0";
+      renderMatches();
+    }
+
+    function renderNextMatch() {
+      const box = document.getElementById("nextMatchContent");
+      const cmbMatch = state.matches.find(m => m.isCmb && !m.played) || state.matches.find(m => m.isCmb);
+      if (!cmbMatch) {
+        box.innerHTML = `<p class="text-gray-300">Nessuna gara del C.M.B. RHO trovata nella giornata selezionata. Usa il tab Calendario per cambiare giornata.</p>`;
+        return;
+      }
+
+      box.innerHTML = `
+        <div class="my-4 space-y-2">
+          <div class="text-lg font-black text-white">${cmbMatch.homeTeam}</div>
+          <div class="text-xs font-black text-[#CC2918]">${cmbMatch.played ? `${cmbMatch.homeScore} - ${cmbMatch.awayScore}` : "VS"}</div>
+          <div class="text-lg font-black text-white">${cmbMatch.awayTeam}</div>
+        </div>
+        <div class="text-xs text-gray-300 space-y-1 border-t border-zinc-800 pt-3 mt-3 text-left">
+          <div>📅 <strong>Data e Ora:</strong> ${cmbMatch.date} • ${cmbMatch.time}</div>
+          <div>📍 <strong>Campo:</strong> ${cmbMatch.gym}</div>
+          <div>🎽 <strong>Arbitri:</strong> ${cmbMatch.referees.join(", ")}</div>
+        </div>
+        <button onclick="openMaps('${cmbMatch.gym.replace(/'/g, "\\'")}')" class="mt-4 w-full bg-[#CC2918] text-white font-black text-xs py-3 rounded-xl">
+          Naviga con Google Maps
+        </button>
+      `;
+    }
+
+    function renderStandings() {
+      const box = document.getElementById("standingsContainer");
+      if (state.standings.length === 0) {
+        box.innerHTML = "Nessuna riga di classifica trovata nella pagina FIP.";
+        return;
+      }
+      box.innerHTML = `
+        <table class="w-full text-xs text-left">
+          <thead>
+            <tr class="border-b border-zinc-800 text-gray-400">
+              <th class="py-2">#</th>
+              <th class="py-2">Squadra</th>
+              <th class="py-2 text-center text-[#CC2918]">PT</th>
+              <th class="py-2 text-center">G</th>
+              <th class="py-2 text-center">V</th>
+              <th class="py-2 text-center">P</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${state.standings.map(r => {
+              const isCmb = r.team.toUpperCase().includes("RHO") && (r.team.toUpperCase().includes("C.M.B") || r.team.toUpperCase().includes("CMB"));
+              return `
+                <tr class="border-b border-zinc-900 ${isCmb ? 'bg-[#CC2918]/25 font-black text-white' : ''}">
+                  <td class="py-2.5 text-gray-400">${r.position}</td>
+                  <td class="py-2.5">${r.team}</td>
+                  <td class="py-2.5 text-center font-black text-[#CC2918]">${r.points}</td>
+                  <td class="py-2.5 text-center">${r.played}</td>
+                  <td class="py-2.5 text-center text-green-400">${r.won}</td>
+                  <td class="py-2.5 text-center text-red-400">${r.lost}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderMatches() {
+      const box = document.getElementById("matchesContainer");
+      const list = state.matches.filter(m => !state.onlyCmb || m.isCmb);
+      if (list.length === 0) {
+        box.innerHTML = `<div class="bg-[#0F0F11] text-gray-400 text-xs p-6 rounded-2xl text-center">Nessuna partita trovata per questo filtro.</div>`;
+        return;
+      }
+      box.innerHTML = list.map(m => `
+        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 border ${m.isCmb ? 'border-[#CC2918]' : 'border-zinc-800'}">
+          <div class="flex justify-between text-[11px] text-gray-400 mb-2">
+            <span class="font-bold text-[#CC2918]">${m.round}</span>
+            <span>${m.date} • ${m.time}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2 my-2">
+            <div class="text-xs font-bold flex-1">${m.homeTeam}</div>
+            <div class="bg-zinc-900 px-3 py-1 rounded-lg font-black text-xs text-[#CC2918]">
+              ${m.played ? `${m.homeScore} - ${m.awayScore}` : "VS"}
+            </div>
+            <div class="text-xs font-bold flex-1 text-right">${m.awayTeam}</div>
+          </div>
+          <div class="mt-3 pt-2 border-t border-zinc-800 text-[11px] text-gray-300 space-y-1">
+            <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(", ")}</div>
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-gray-400 truncate pr-2">📍 ${m.gym}</span>
+              <button onclick="openMaps('${m.gym.replace(/'/g, "\\'")}')" class="text-[#CC2918] font-bold shrink-0">Maps ↗</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderGyms() {
+      const q = (document.getElementById("gymSearch").value || "").toLowerCase();
+      const box = document.getElementById("gymsContainer");
+      box.innerHTML = GYMS.filter(g => g.team.toLowerCase().includes(q) || g.address.toLowerCase().includes(q)).map(g => `
+        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 border border-zinc-800 flex items-center justify-between gap-3">
+          <div>
+            <div class="text-xs font-black text-[#CC2918]">${g.team}</div>
+            <div class="text-sm font-bold">${g.gym}</div>
+            <div class="text-xs text-gray-400">${g.address}</div>
+          </div>
+          <button onclick="openMaps('${g.query}')" class="bg-[#CC2918] text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shrink-0">
+            Maps ↗
+          </button>
+        </div>
+      `).join("");
+    }
+
+    renderGyms();
+    loadFipData();
+  </script>
+</body>
+</html>
