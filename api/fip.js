@@ -40,7 +40,7 @@ let CACHE = { timestamp: 0, data: null };
 
 async function fetchHtml(url) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 7000);
+  const timeout = setTimeout(() => controller.abort(), 7500);
   try {
     const response = await fetch(url, {
       headers: HEADERS,
@@ -276,35 +276,16 @@ function parseMatches(tokens, roundLabel, roundKey) {
   return matches;
 }
 
-function buildRoundsList($) {
-  const rawRounds = [];
-  $("a[href*='giornata='], option[value*='giornata=']").each((_, el) => {
-    const href = $(el).attr("href") || $(el).attr("value") || "";
-    const arMatch = href.match(/codice_ar=([^&]+)/);
-    const gMatch = href.match(/giornata=(\d+)/);
-    if (gMatch) {
-      const ar = arMatch ? arMatch[1] : "1";
-      const g = parseInt(gMatch[1], 10);
-      if (!rawRounds.some((r) => r.codice_ar === ar && r.giornata === g)) {
-        rawRounds.push({ codice_ar: ar, giornata: g });
-      }
-    }
-  });
-
-  // Rileva i codici usati da FIP per Andata e Ritorno (es. "0"/"1" oppure "1"/"2" oppure "A"/"R")
-  const distinctAr = Array.from(new Set(rawRounds.map((r) => r.codice_ar))).sort();
-  const firstAr = distinctAr[0] || "1";
-  const secondAr = distinctAr[1] || (firstAr === "0" ? "1" : "2");
-
-  const map = new Map();
-  for (const ar of [firstAr, secondAr]) {
-    const isRitorno = ar === secondAr && ar !== firstAr;
+function buildRoundsList() {
+  // Sul portale FIP: codice_ar=1 è SEMPRE Andata, codice_ar=2 è SEMPRE Ritorno
+  const rounds = [];
+  for (const ar of ["1", "2"]) {
+    const isRitorno = ar === "2";
     const fase = isRitorno ? "Ritorno" : "Andata";
     const orderPrefix = isRitorno ? 2 : 1;
     for (let g = 1; g <= 11; g++) {
-      const key = `${ar}-${g}`;
-      map.set(key, {
-        key,
+      rounds.push({
+        key: `${ar}-${g}`,
         codice_ar: ar,
         giornata: g,
         order: orderPrefix * 100 + g,
@@ -312,8 +293,7 @@ function buildRoundsList($) {
       });
     }
   }
-
-  return Array.from(map.values()).sort((a, b) => a.order - b.order);
+  return rounds;
 }
 
 function enrichStandingsWithMatches(standings, allMatches) {
@@ -325,6 +305,7 @@ function enrichStandingsWithMatches(standings, allMatches) {
       statsByTeam[k] = {
         pf: 0,
         ps: 0,
+        playedCount: 0,
         homeWon: 0,
         homeLost: 0,
         awayWon: 0,
@@ -345,8 +326,11 @@ function enrichStandingsWithMatches(standings, allMatches) {
 
     hStat.pf += m.homeScore;
     hStat.ps += m.awayScore;
+    hStat.playedCount++;
+
     aStat.pf += m.awayScore;
     aStat.ps += m.homeScore;
+    aStat.playedCount++;
 
     const homeWin = m.homeScore > m.awayScore;
     if (homeWin) {
@@ -379,6 +363,7 @@ function enrichStandingsWithMatches(standings, allMatches) {
     const calc = statsByTeam[k] || {
       pf: 0,
       ps: 0,
+      playedCount: 0,
       homeWon: 0,
       homeLost: 0,
       awayWon: 0,
@@ -388,12 +373,17 @@ function enrichStandingsWithMatches(standings, allMatches) {
 
     const pf = row.pf > 0 ? row.pf : calc.pf;
     const ps = row.ps > 0 ? row.ps : calc.ps;
+    const games = row.played > 0 ? row.played : calc.playedCount;
+    const ppg = games > 0 ? Number((pf / games).toFixed(1)) : 0;
+    const oppg = games > 0 ? Number((ps / games).toFixed(1)) : 0;
 
     return {
       ...row,
       pf,
       ps,
       diff: pf - ps,
+      ppg,
+      oppg,
       homeRecord: `${calc.homeWon}-${calc.homeLost}`,
       awayRecord: `${calc.awayWon}-${calc.awayLost}`,
       last5: calc.form.slice(-5)
@@ -432,7 +422,7 @@ module.exports = async (req, res) => {
     const initialHtml = await fetchHtml(BASE_FIP_URL);
     const $initial = cheerio.load(initialHtml);
     const rawStandings = parseStandings($initial);
-    const availableRounds = buildRoundsList($initial);
+    const availableRounds = buildRoundsList();
 
     const allMatches = [];
     const seenKeys = new Set();
@@ -453,7 +443,7 @@ module.exports = async (req, res) => {
       for (const resItem of results) {
         if (resItem.status === "fulfilled" && Array.isArray(resItem.value)) {
           for (const m of resItem.value) {
-            const uniqueId = `${m.homeTeam}-${m.awayTeam}-${m.date}`;
+            const uniqueId = `${m.roundKey}-${m.homeTeam}-${m.awayTeam}`;
             if (!seenKeys.has(uniqueId)) {
               seenKeys.add(uniqueId);
               allMatches.push(m);
@@ -462,13 +452,6 @@ module.exports = async (req, res) => {
         }
       }
     }
-
-    // Corregge l'etichetta Andata/Ritorno in base alla data reale (2026 = Andata)
-    allMatches.forEach((m) => {
-      if (m.dateNum < 20270110 && m.round.includes("Ritorno")) {
-        m.round = m.round.replace("Ritorno", "Andata");
-      }
-    });
 
     const standings = enrichStandingsWithMatches(rawStandings, allMatches);
     const todayNum = getTodayRomeNum();
@@ -489,7 +472,7 @@ module.exports = async (req, res) => {
 
     const currentRoundKey = nextCmbMatch
       ? nextCmbMatch.roundKey
-      : availableRounds[0]?.key || "";
+      : availableRounds[0]?.key || "1-1";
 
     const payload = {
       ok: true,
