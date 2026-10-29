@@ -57,33 +57,40 @@ function parseMatchesFromPage($) {
   const matches = [];
   let currentRound = "Giornata FIP";
 
-  // Analizza tutte le righe di tutte le tabelle o blocchi gara della pagina FIP
-  $("tr, div, li").each((idx, el) => {
-    const text = $(el).text().replace(/\s+/g, " ").trim();
+  // Cerca blocchi specifici di partite o righe tabella
+  $("tr, .match-row, .results-match, .gara-item").each((idx, el) => {
+    const block = $(el);
+    const text = block.text().replace(/\s+/g, " ").trim();
 
-    // Rileva eventuali intestazioni di giornata
+    // Rileva intestazione giornata
     if (/giornata|andata|ritorno/i.test(text) && text.length < 40 && text.length > 3) {
       currentRound = text;
     }
 
-    // Cerca pattern di risultati o incontri (es. Squadra A - Squadra B con punteggio o data)
-    const dateMatch = text.match(/(\d{2}\/\d{2}\/\d{4})/);
-    const timeMatch = text.match(/(\d{2}[:.]\d{2})/);
-    
-    // Identifica se la riga contiene una sfida tra due squadre
-    // Cerchiamo elementi con trattino o separatori tipici FIP
-    const cells = $(el).find("td");
-    if (cells.length >= 3) {
+    // Estrai celle
+    const cells = block.find("td");
+    if (cells.length >= 2) {
       const cellTexts = [];
-      cells.each((_, c) => cellTexts.push($(c).text().replace(/\s+/g, " ").trim()));
-      
-      // Filtra celle con nomi plausibili di squadre
-      const potentialTeams = cellTexts.filter(t => t.length > 3 && !/\d{2}\/\d{2}/.test(t) && !/^\d+$/.test(t));
-      if (potentialTeams.length >= 2) {
-        const homeTeam = potentialTeams[0];
-        const awayTeam = potentialTeams[1];
-        
-        // Cerca punteggi nelle celle
+      cells.each((_, c) => {
+        const cText = $(c).text().replace(/\s+/g, " ").trim();
+        if (cText) cellTexts.push(cText);
+      });
+
+      // Cerca squadre nelle celle (escludendo stringhe di servizio o codici)
+      const validTexts = cellTexts.filter(t => 
+        t.length > 3 && 
+        !t.includes("Sede:") && 
+        !t.includes("Riferimento:") && 
+        !t.includes("Studio GBO") &&
+        !/^\d{5,}/.test(t)
+      );
+
+      if (validTexts.length >= 2) {
+        // Tenta di identificare casa e ospite
+        let homeTeam = validTexts[0];
+        let awayTeam = validTexts[1];
+
+        // Punteggi
         let homeScore = null;
         let awayScore = null;
         cellTexts.forEach(txt => {
@@ -94,14 +101,24 @@ function parseMatchesFromPage($) {
           }
         });
 
+        // Data e ora pulite
+        const dateMatch = text.match(/(\d{2}\/\d{2}\/\d{4})/);
+        const timeMatch = text.match(/(\d{2}[:.]\d{2})/);
+
+        // Estrazione pulita del campo (cercando parole chiave senzadumpare l'intera anagrafica)
+        let gym = `Palestra di ${homeTeam}`;
+        const gymMatch = text.match(/(?:Campo\s*da\s*gioco|Impianto|Palestra)[:\s]*([^•\n]+?)(?=\s*(?:Riferimento|Sede|1°|2°|$))/i);
+        if (gymMatch && gymMatch[1].trim().length > 4) {
+          gym = gymMatch[1].trim().replace(/00\d+\s*/g, ""); // Pulisce eventuali codici residui
+        }
+
         const isCmb =
           (homeTeam.toUpperCase().includes("RHO") && (homeTeam.toUpperCase().includes("C.M.B") || homeTeam.toUpperCase().includes("CMB"))) ||
           (awayTeam.toUpperCase().includes("RHO") && (awayTeam.toUpperCase().includes("C.M.B") || awayTeam.toUpperCase().includes("CMB")));
 
-        const matchId = `${homeTeam}-${awayTeam}-${idx}`;
-        if (!matches.some(m => m.homeTeam === homeTeam && m.awayTeam === awayTeam)) {
+        if (homeTeam && awayTeam && !matches.some(m => m.homeTeam === homeTeam && m.awayTeam === awayTeam)) {
           matches.push({
-            id: matchId,
+            id: `${homeTeam}-${awayTeam}-${idx}`,
             round: currentRound,
             date: dateMatch ? dateMatch[1] : "Data da definire",
             time: timeMatch ? timeMatch[1].replace(".", ":") : "--:--",
@@ -110,8 +127,8 @@ function parseMatchesFromPage($) {
             homeScore,
             awayScore,
             played: homeScore !== null && awayScore !== null,
-            referees: ["Designazione FIP in aggiornamento"],
-            gym: `Campo ${homeTeam}`,
+            referees: ["Designazione in attesa di conferma"],
+            gym,
             isCmb
           });
         }
@@ -120,28 +137,6 @@ function parseMatchesFromPage($) {
   });
 
   return matches;
-}
-
-function parseAvailableRounds($) {
-  const rounds = [];
-  $("a[href*='giornata='], option[value*='giornata=']").each((_, el) => {
-    const href = $(el).attr("href") || $(el).attr("value") || "";
-    const label = $(el).text().replace(/\s+/g, " ").trim();
-    const arMatch = href.match(/codice_ar=([^&]+)/);
-    const gMatch = href.match(/giornata=(\d+)/);
-    if (gMatch) {
-      const key = `${arMatch ? arMatch[1] : "0"}-${gMatch[1]}`;
-      if (!rounds.some((r) => r.key === key)) {
-        rounds.push({
-          key,
-          codice_ar: arMatch ? arMatch[1] : "0",
-          giornata: gMatch[1],
-          label: label || `Giornata ${gMatch[1]}`
-        });
-      }
-    }
-  });
-  return rounds;
 }
 
 module.exports = async (req, res) => {
@@ -153,34 +148,22 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { codice_ar, giornata } = req.query;
-    let targetUrl = BASE_FIP_URL;
-    if (giornata) {
-      targetUrl += `&codice_ar=${codice_ar || "0"}&giornata=${giornata}`;
-    }
-
-    const html = await fetchHtml(targetUrl);
+    const html = await fetchHtml(BASE_FIP_URL);
     const $ = cheerio.load(html);
 
     const standings = parseStandings($);
     const matches = parseMatchesFromPage($);
-    const availableRounds = parseAvailableRounds($);
 
     return res.status(200).json({
       ok: true,
       updatedAt: new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" }),
-      sourceUrl: targetUrl,
-      standingsCount: standings.length,
-      matchesCount: matches.length,
-      availableRounds,
       standings,
       matches
     });
   } catch (error) {
     return res.status(500).json({
       ok: false,
-      error: error.message,
-      sourceUrl: BASE_FIP_URL
+      error: error.message
     });
   }
 };
