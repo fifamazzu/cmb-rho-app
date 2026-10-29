@@ -32,8 +32,12 @@ const INFO_LABELS = [
   { key: "ref1", regex: /^1\s*[^\w\s]?\s*Arbitro$/i },
   { key: "ref2", regex: /^2\s*[^\w\s]?\s*Arbitro$/i },
   { key: "ref3", regex: /^3\s*[^\w\s]?\s*Arbitro$/i },
-  { key: "stop", regex: /^(Segnapunti|Cronometrista|24\s*secondi)$/i }
+  { key: "refGeneric", regex: /^Arbitr[oi]$/i },
+  { key: "stop", regex: /^(Segnapunti|Cronometrista|24\s*secondi|Osservatore)$/i }
 ];
+
+// Cache in memoria di 2 minuti per velocizzare il caricamento
+let CACHE = { timestamp: 0, data: null };
 
 async function fetchHtml(url) {
   const response = await fetch(url, { headers: HEADERS });
@@ -41,6 +45,12 @@ async function fetchHtml(url) {
     throw new Error(`FIP.it ha risposto con stato HTTP ${response.status}`);
   }
   return await response.text();
+}
+
+function isCmbTeam(name) {
+  if (!name) return false;
+  const u = name.toUpperCase();
+  return u.includes("RHO") && (u.includes("C.M.B") || u.includes("CMB") || u.includes("CENTRO MINI BASKET"));
 }
 
 function parseStandings($) {
@@ -75,7 +85,8 @@ function parseStandings($) {
           points,
           played,
           won,
-          lost
+          lost,
+          isCmb: isCmbTeam(team)
         });
       }
     }
@@ -110,56 +121,67 @@ function matchLabel(token) {
   return null;
 }
 
-function parseMatches(tokens, activeRoundLabel) {
+function dateToComparableNum(dateStr) {
+  const m = (dateStr || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return 99999999;
+  return parseInt(`${m[3]}${m[2]}${m[1]}`, 10);
+}
+
+function parseMatches(tokens, roundLabel, roundKey) {
   const matches = [];
-  let prevMatchEnd = 0;
 
   for (let i = 0; i < tokens.length; i++) {
     if (!/^Squadra di casa$/i.test(tokens[i])) continue;
 
-    // 1. Estrae i campi del pannello Info (Squadra di casa, ospite, Campo, Arbitri)
     const info = {
       homeTeam: [],
       awayTeam: [],
       gym: [],
       ref1: [],
       ref2: [],
-      ref3: []
+      ref3: [],
+      refGeneric: []
     };
 
     let currentKey = "homeTeam";
-    let k = i + 1;
-    for (; k < Math.min(tokens.length, i + 40); k++) {
+    for (let k = i + 1; k < Math.min(tokens.length, i + 30); k++) {
       const tok = tokens[k];
-      if (/^Squadra di casa$/i.test(tok)) break;
+      if (/^Squadra di casa$/i.test(tok) || /^Info$/i.test(tok)) break;
+
       const lbl = matchLabel(tok);
       if (lbl) {
-        if (lbl === "stop") {
-          currentKey = null;
-        } else {
-          currentKey = lbl;
-        }
-        if (/^24\s*secondi$/i.test(tok)) {
-          k++;
-          break;
-        }
+        if (lbl === "stop") break;
+        currentKey = lbl;
         continue;
       }
+
       if (currentKey && info[currentKey]) {
         info[currentKey].push(tok);
+        // "Campo di gioco" e "Arbitri" generico hanno un solo blocco di testo
+        if (currentKey === "refGeneric") break;
+        if (currentKey === "gym" && info.gym.length >= 1) {
+          currentKey = null;
+        }
       }
     }
 
-    // 2. Cerca data, ora, codice gara e punteggio nei token subito prima di "Squadra di casa"
-    const headerSlice = tokens.slice(Math.max(prevMatchEnd, i - 16), i);
-    prevMatchEnd = k;
-
+    // Scansione all'indietro prima di "Squadra di casa" per trovare Data, Ora, Codice Gara e Punteggi
     let dateStr = "Data da definire";
     let timeStr = "--:--";
+    let matchCode = "";
     const scores = [];
 
-    for (const hTok of headerSlice) {
-      // Data formato "29 Ottobre 2026"
+    for (let b = i - 1; b >= Math.max(0, i - 14); b--) {
+      const hTok = tokens[b];
+      if (
+        /^(24\s*secondi|Cronometrista|Segnapunti)$/i.test(hTok) ||
+        /CONFERMA\.?$/i.test(hTok) ||
+        /Arbitro$/i.test(hTok) ||
+        /^Squadra/i.test(hTok)
+      ) {
+        break;
+      }
+
       const mTextDate = hTok.match(
         /^(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+(\d{4})$/i
       );
@@ -170,23 +192,25 @@ function parseMatches(tokens, activeRoundLabel) {
         continue;
       }
 
-      // Data formato "29/10/2026"
       const mSlashDate = hTok.match(/^(\d{2}\/\d{2}\/\d{4})$/);
       if (mSlashDate) {
         dateStr = mSlashDate[1];
         continue;
       }
 
-      // Orario formato "21:15"
       const mTime = hTok.match(/^(\d{2})[:.](\d{2})$/);
       if (mTime) {
         timeStr = `${mTime[1]}:${mTime[2]}`;
         continue;
       }
 
-      // Punteggi (numeri di 1-3 cifre che non sono il codice gara a 5-6 cifre)
+      if (/^\d{5,6}$/.test(hTok)) {
+        matchCode = hTok;
+        continue;
+      }
+
       if (/^\d{1,3}$/.test(hTok)) {
-        scores.push(parseInt(hTok, 10));
+        scores.unshift(parseInt(hTok, 10));
       }
     }
 
@@ -208,18 +232,13 @@ function parseMatches(tokens, activeRoundLabel) {
     const homeScore = scores.length >= 2 ? scores[scores.length - 2] : null;
     const awayScore = scores.length >= 2 ? scores[scores.length - 1] : null;
 
-    const isCmb =
-      homeTeam.toUpperCase().includes("RHO") &&
-      (homeTeam.toUpperCase().includes("C.M.B") ||
-        homeTeam.toUpperCase().includes("CMB")) ||
-      (awayTeam.toUpperCase().includes("RHO") &&
-        (awayTeam.toUpperCase().includes("C.M.B") ||
-          awayTeam.toUpperCase().includes("CMB")));
-
     matches.push({
-      id: `${homeTeam}-${awayTeam}-${i}`,
-      round: activeRoundLabel,
+      id: matchCode || `${roundKey}-${homeTeam}-${awayTeam}`,
+      matchCode,
+      round: roundLabel,
+      roundKey,
       date: dateStr,
+      dateNum: dateToComparableNum(dateStr),
       time: timeStr,
       homeTeam,
       awayTeam,
@@ -228,38 +247,68 @@ function parseMatches(tokens, activeRoundLabel) {
       played: homeScore !== null && awayScore !== null,
       referees,
       gym,
-      isCmb
+      isCmb: isCmbTeam(homeTeam) || isCmbTeam(awayTeam),
+      isCmbHome: isCmbTeam(homeTeam)
     });
   }
 
   return matches;
 }
 
-function parseAvailableRounds($) {
-  const rounds = [];
+function buildFullRoundsList($) {
+  const map = new Map();
+
+  // In FIP: codice_ar=1 è Andata, codice_ar=2 è Ritorno
   $("a[href*='giornata='], option[value*='giornata=']").each((_, el) => {
     const href = $(el).attr("href") || $(el).attr("value") || "";
-    const rawLabel = $(el).text().replace(/\s+/g, " ").trim();
     const arMatch = href.match(/codice_ar=([^&]+)/);
     const gMatch = href.match(/giornata=(\d+)/);
     if (gMatch) {
-      const ar = arMatch ? arMatch[1] : "0";
-      const g = gMatch[1];
+      const ar = arMatch ? arMatch[1] : "1";
+      const g = parseInt(gMatch[1], 10);
       const key = `${ar}-${g}`;
-      if (!rounds.some((r) => r.key === key)) {
-        const gironeFase = ar === "1" || ar === "R" ? "Ritorno" : "Andata";
-        rounds.push({
+      const fase = ar === "2" || ar.toUpperCase() === "R" ? "Ritorno" : "Andata";
+      map.set(key, {
+        key,
+        codice_ar: ar,
+        giornata: g,
+        label: `Giornata ${g} (${fase})`
+      });
+    }
+  });
+
+  // Garantisce che tutte le 11 giornate di Andata (ar=1) e 11 di Ritorno (ar=2) siano presenti
+  for (const ar of ["1", "2"]) {
+    const fase = ar === "2" ? "Ritorno" : "Andata";
+    for (let g = 1; g <= 11; g++) {
+      const key = `${ar}-${g}`;
+      if (!map.has(key)) {
+        map.set(key, {
           key,
           codice_ar: ar,
           giornata: g,
-          label: /^\d+$/.test(rawLabel)
-            ? `Giornata ${g} (${gironeFase})`
-            : rawLabel || `Giornata ${g}`
+          label: `Giornata ${g} (${fase})`
         });
       }
     }
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    if (a.codice_ar !== b.codice_ar) return a.codice_ar.localeCompare(b.codice_ar);
+    return a.giornata - b.giornata;
   });
-  return rounds;
+}
+
+function getTodayRomeNum() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Rome",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  })
+    .format(new Date())
+    .split("-");
+  return parseInt(`${parts[0]}${parts[1]}${parts[2]}`, 10);
 }
 
 module.exports = async (req, res) => {
@@ -271,35 +320,88 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { codice_ar, giornata } = req.query;
-    let targetUrl = BASE_FIP_URL;
-    let roundLabel = "Giornata Corrente";
+    const forceRefresh = req.query.force === "1";
+    const now = Date.now();
 
-    if (giornata) {
-      const ar = codice_ar || "0";
-      targetUrl += `&codice_ar=${ar}&giornata=${giornata}`;
-      const fase = ar === "1" || ar === "R" ? "Ritorno" : "Andata";
-      roundLabel = `Giornata ${giornata} (${fase})`;
+    if (!forceRefresh && CACHE.data && now - CACHE.timestamp < 120 * 1000) {
+      return res.status(200).json(CACHE.data);
     }
 
-    const html = await fetchHtml(targetUrl);
-    const $ = cheerio.load(html);
-    const tokens = getTokens($);
+    const initialHtml = await fetchHtml(BASE_FIP_URL);
+    const $initial = cheerio.load(initialHtml);
+    const standings = parseStandings($initial);
+    const availableRounds = buildFullRoundsList($initial);
 
-    const standings = parseStandings($);
-    const matches = parseMatches(tokens, roundLabel);
-    const availableRounds = parseAvailableRounds($);
+    // Scarica tutte le giornate in parallelo a blocchi per trovare l'intero calendario
+    const allMatches = [];
+    const seenKeys = new Set();
+    const batchSize = 8;
 
-    return res.status(200).json({
+    for (let i = 0; i < availableRounds.length; i += batchSize) {
+      const batch = availableRounds.slice(i, i + batchSize);
+      const results = await Promise.allSettled(
+        batch.map(async (r) => {
+          const url = `${BASE_FIP_URL}&codice_ar=${r.codice_ar}&giornata=${r.giornata}`;
+          const html = await fetchHtml(url);
+          const $ = cheerio.load(html);
+          const tokens = getTokens($);
+          return parseMatches(tokens, r.label, r.key);
+        })
+      );
+
+      for (const resItem of results) {
+        if (resItem.status === "fulfilled" && Array.isArray(resItem.value)) {
+          for (const m of resItem.value) {
+            const uniqueId = `${m.roundKey}-${m.homeTeam}-${m.awayTeam}`;
+            if (!seenKeys.has(uniqueId)) {
+              seenKeys.add(uniqueId);
+              allMatches.push(m);
+            }
+          }
+        }
+      }
+    }
+
+    const todayNum = getTodayRomeNum();
+    const cmbMatches = allMatches.filter((m) => m.isCmb);
+
+    // Trova automaticamente la PROSSIMA partita (o la partita di OGGI/STASERA)
+    const upcomingCmb = cmbMatches
+      .filter((m) => !m.played && m.dateNum >= todayNum)
+      .sort((a, b) => a.dateNum - b.dateNum);
+
+    const nextCmbMatch =
+      upcomingCmb[0] ||
+      cmbMatches.find((m) => !m.played) ||
+      cmbMatches[cmbMatches.length - 1] ||
+      null;
+
+    // Trova l'ultima partita già giocata dal C.M.B. RHO
+    const playedCmb = cmbMatches
+      .filter((m) => m.played)
+      .sort((a, b) => b.dateNum - a.dateNum);
+    const lastCmbMatch = playedCmb[0] || null;
+
+    const currentRoundKey = nextCmbMatch
+      ? nextCmbMatch.roundKey
+      : availableRounds[0]?.key || "1-1";
+
+    const payload = {
       ok: true,
       updatedAt: new Date().toLocaleString("it-IT", {
         timeZone: "Europe/Rome"
       }),
-      sourceUrl: targetUrl,
+      todayNum,
+      currentRoundKey,
+      nextCmbMatch,
+      lastCmbMatch,
+      availableRounds,
       standings,
-      matches,
-      availableRounds
-    });
+      matches: allMatches
+    };
+
+    CACHE = { timestamp: now, data: payload };
+    return res.status(200).json(payload);
   } catch (error) {
     return res.status(500).json({
       ok: false,
