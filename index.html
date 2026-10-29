@@ -35,7 +35,7 @@
 </head>
 <body class="min-h-screen pb-24 select-none">
 
-  <!-- TOP BAR COMPATTO E MODERNO -->
+  <!-- TOP BAR -->
   <header class="sticky top-0 z-30 bg-[#0F0F11]/95 backdrop-blur-md text-white px-4 py-3 border-b border-white/10">
     <div class="max-w-md mx-auto flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -63,7 +63,7 @@
     <div id="errorBox" class="hidden bg-red-950 border border-[#CC2918] text-white p-4 rounded-2xl text-xs"></div>
 
     <!-- ========================================== -->
-    <!-- SEZIONE 1: HOME (IDENTICA A FOTO 1)        -->
+    <!-- SEZIONE 1: HOME                            -->
     <!-- ========================================== -->
     <section id="tab-home" class="space-y-4">
       <div id="homeContent" class="space-y-4">
@@ -74,10 +74,10 @@
     </section>
 
     <!-- ========================================== -->
-    <!-- SEZIONE 2: CALENDARIO (FOTO 2 + FILTRI)    -->
+    <!-- SEZIONE 2: CALENDARIO                      -->
     <!-- ========================================== -->
     <section id="tab-calendar" class="hidden space-y-4">
-      <!-- Hero Prossima Partita in cima (come nella Foto 2) -->
+      <!-- Hero Prossima Partita in cima -->
       <div id="calendarHeroBox"></div>
 
       <!-- Selettore Modalità Calendario -->
@@ -90,9 +90,8 @@
         </button>
       </div>
 
-      <!-- SOTTO-VISTA A: CALENDARIO MENSILE + EVENTI (COME IN FOTO 2) -->
+      <!-- SOTTO-VISTA A: CALENDARIO MENSILE + EVENTI -->
       <div id="calendarMonthView" class="space-y-4">
-        <!-- Scelta squadra per il calendario mensile (di default C.M.B. RHO) -->
         <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-3">
@@ -118,20 +117,44 @@
             <button onclick="changeMonth(1)" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 font-bold">›</button>
           </div>
 
-          <!-- Intestazione Giorni Settimana -->
+          <!-- Giorni Settimana -->
           <div class="grid grid-cols-7 text-center text-[11px] font-semibold text-gray-400 pt-1">
             <div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div>
           </div>
 
-          <!-- Griglia Giorni del Mese -->
+          <!-- Griglia Mese -->
           <div id="monthGrid" class="grid grid-cols-7 gap-y-2 text-center text-xs"></div>
         </div>
 
-        <!-- Card Giorno Selezionato (es. Giovedì 29 Ottobre) -->
+        <!-- Card Giorno Selezionato -->
         <div id="selectedDateCard" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"></div>
 
-        <!-- Card Prossimi Eventi della Squadra -->
+        <!-- Card Prossimi Eventi -->
         <div id="calendarUpcomingCard" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"></div>
+
+        <!-- Card Esporta Calendario (.ics) sul Telefono -->
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
+              📲
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900">Sincronizza sul tuo Calendario</h3>
+              <p class="text-[11px] text-gray-400">Salva le partite su iPhone o Google Calendar (.ics)</p>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 leading-relaxed">
+            Scarica il file <strong>.ics</strong> per aggiungere automaticamente orari, indirizzi delle palestre e promemoria 90 minuti prima della palla a due sul calendario del tuo telefono.
+          </p>
+          <div class="space-y-2 pt-1">
+            <button onclick="downloadNextMatchIcs()" class="w-full bg-[#CC2918] hover:bg-red-700 active:scale-[0.99] text-white font-bold text-xs py-3 rounded-2xl shadow-sm transition">
+              📅 Aggiungi Prossima Partita al Calendario (.ics)
+            </button>
+            <button onclick="downloadAllCmbSeasonIcs()" class="w-full bg-gray-100 hover:bg-gray-200 active:scale-[0.99] text-gray-800 font-bold text-xs py-3 rounded-2xl transition">
+              🗓️ Scarica Tutte le Partite del C.M.B. RHO (.ics)
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- SOTTO-VISTA B: ESPLORA CAMPIONATO PER GIORNATA O PER SQUADRA -->
@@ -154,7 +177,7 @@
             </select>
           </div>
 
-          <!-- Dropdown Squadra (Tutte le partite di una singola squadra) -->
+          <!-- Dropdown Squadra -->
           <div id="teamSelectWrapper" class="hidden">
             <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Scegli la Squadra (22 Partite)</label>
             <select id="teamSelect" onchange="renderLeagueMatches()" class="w-full bg-gray-50 text-gray-900 text-xs font-bold rounded-xl px-3 py-2.5 border border-gray-200 focus:outline-none">
@@ -169,7 +192,7 @@
     </section>
 
     <!-- ========================================== -->
-    <!-- SEZIONE 3: CLASSIFICA COMPLETA (PF/PS/DIFF)-->
+    <!-- SEZIONE 3: CLASSIFICA COMPLETA             -->
     <!-- ========================================== -->
     <section id="tab-standings" class="hidden space-y-3">
       <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
@@ -200,13 +223,13 @@
   </main>
 
   <!-- MODAL DETTAGLIO PARTITA -->
-  <div id="matchModal" onclick="closeMatchModal(event)" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div id="matchModal" onclick="closeMatchModal()" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div onclick="event.stopPropagation()" class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4 shadow-2xl">
       <div id="matchModalContent"></div>
     </div>
   </div>
 
-  <!-- BOTTOM NAVIGATION BAR (STILE APP PREMIUM) -->
+  <!-- BOTTOM NAVIGATION BAR -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 px-2 py-1.5">
     <div class="max-w-md mx-auto grid grid-cols-4 gap-1 text-center">
       <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-[#CC2918] bg-red-50/80 font-bold text-[11px] transition">
@@ -258,10 +281,10 @@
       nextCmbMatch: null,
       upcomingCmbMatches: [],
       todayNum: 0,
-      calMode: "month", // 'month' | 'league'
-      leagueFilterMode: "round", // 'round' | 'team'
-      monthYear: { year: 2026, month: 9 }, // 9 = Ottobre (0-based)
-      selectedDateStr: "", // 'DD/MM/YYYY'
+      calMode: "month",
+      leagueFilterMode: "round",
+      monthYear: { year: 2026, month: 9 },
+      selectedDateStr: "",
       selectedMonthTeam: "CMB",
       countdownTimer: null
     };
@@ -292,6 +315,10 @@
       return ka === kb || ka.includes(kb) || kb.includes(ka);
     }
 
+    function findStanding(teamName) {
+      return state.standings.find(s => isSameTeam(s.team, teamName)) || null;
+    }
+
     function formatLongDate(dateStr) {
       const m = (dateStr || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (!m) return dateStr || "Data da definire";
@@ -309,7 +336,7 @@
       const dObj = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
       const dayName = DAYS_SHORT[dObj.getDay()];
       const monthName = MONTHS_SHORT[Number(m[2]) - 1];
-      return `${dayName} ${ parseInt(m[1], 10) } ${monthName}`;
+      return `${dayName} ${parseInt(m[1], 10)} ${monthName}`;
     }
 
     function formatFullDayHeader(dateStr) {
@@ -330,7 +357,157 @@
       return { title, sub };
     }
 
-    function buildHeroCardHtml(m, countdownTargetId) {
+    // ====================================================
+    // 1. CONDIVISIONE PROMEMORIA PARTITA SU WHATSAPP
+    // ====================================================
+    function shareMatchOnWhatsApp(matchId) {
+      const m = matchId
+        ? state.matches.find(x => x.id === matchId)
+        : state.nextCmbMatch;
+      if (!m) return;
+
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.gym)}`;
+      const isPlayed = m.played && m.homeScore !== null && m.awayScore !== null;
+
+      const lines = [
+        isPlayed ? `🏀 *RISULTATO FINALE — C.M.B. RHO 1969*` : `🏀 *PROMEMORIA GARA — C.M.B. RHO 1969*`,
+        `🏆 DR4 Girone K • ${m.round}`,
+        ``,
+        isPlayed
+          ? `⚔️ *${m.homeTeam} ${m.homeScore} - ${m.awayScore} ${m.awayTeam}*`
+          : `⚔️ *${m.homeTeam} vs ${m.awayTeam}* (${m.isCmbHome ? "In Casa" : "Trasferta"})`,
+        `📅 Data: *${formatFullDayHeader(m.date)}*`,
+        `🕘 Orario: *Ore ${m.time}*`,
+        `📍 Palestra: *${m.gym}*`,
+        `🎽 Arbitri: ${m.referees.join(" • ")}`,
+        ``,
+        `🧭 *Naviga con Google Maps:*`,
+        mapsUrl
+      ];
+
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
+      window.open(waUrl, "_blank");
+    }
+
+    // ====================================================
+    // 2. GENERATORE FILE CALENDARIO (.ICS) PER IPHONE/ANDROID
+    // ====================================================
+    function escapeIcsText(str) {
+      return (str || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/;/g, "\\;")
+        .replace(/,/g, "\\,")
+        .replace(/\n/g, "\\n");
+    }
+
+    function buildIcsEventBlock(m) {
+      const dateMatch = (m.date || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!dateMatch) return null;
+
+      const dd = dateMatch[1];
+      const mm = dateMatch[2];
+      const yyyy = dateMatch[3];
+
+      const timeMatch = (m.time || "").match(/^(\d{2}):(\d{2})$/);
+      const hh = timeMatch ? parseInt(timeMatch[1], 10) : 21;
+      const min = timeMatch ? parseInt(timeMatch[2], 10) : 0;
+
+      const startObj = new Date(Number(yyyy), Number(mm) - 1, Number(dd), hh, min, 0);
+      // Durata standard partita di basket: 1 ora e 45 minuti
+      const endObj = new Date(startObj.getTime() + 105 * 60 * 1000);
+
+      const pad = (n) => String(n).padStart(2, "0");
+      const formatIcsLocal = (d) =>
+        `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+
+      const dtStart = formatIcsLocal(startObj);
+      const dtEnd = formatIcsLocal(endObj);
+      const dtStamp = formatIcsLocal(new Date()) + "Z";
+
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.gym)}`;
+      const summary = `🏀 ${m.homeTeam} vs ${m.awayTeam}`;
+      const description = [
+        `Campionato DR4 Lombardia - Girone K (${m.round})`,
+        `Impegno: ${m.isCmbHome ? "In Casa" : "Trasferta"}`,
+        `Campo: ${m.gym}`,
+        `Arbitri: ${m.referees.join(", ")}`,
+        m.matchCode ? `Codice Gara FIP: ${m.matchCode}` : "",
+        `Google Maps: ${mapsUrl}`
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      return [
+        "BEGIN:VEVENT",
+        `UID:cmbrho-${m.id.replace(/[^a-zA-Z0-9]/g, "")}@cmbrho1969.it`,
+        `DTSTAMP:${dtStamp}`,
+        `DTSTART;TZID=Europe/Rome:${dtStart}`,
+        `DTEND;TZID=Europe/Rome:${dtEnd}`,
+        `SUMMARY:${escapeIcsText(summary)}`,
+        `LOCATION:${escapeIcsText(m.gym)}`,
+        `DESCRIPTION:${escapeIcsText(description)}`,
+        "BEGIN:VALARM",
+        "TRIGGER:-PT90M",
+        "ACTION:DISPLAY",
+        "DESCRIPTION:Ritrovo Partita C.M.B. RHO tra 90 minuti!",
+        "END:VALARM",
+        "END:VEVENT"
+      ].join("\r\n");
+    }
+
+    function triggerIcsDownload(eventsArray, filename) {
+      const validBlocks = eventsArray.map(buildIcsEventBlock).filter(Boolean);
+      if (validBlocks.length === 0) {
+        alert("Data della partita non ancora definita dalla FIP.");
+        return;
+      }
+
+      const icsContent = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//C.M.B. RHO 1969//DR4 Girone K//IT",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "X-WR-CALNAME:C.M.B. RHO 1969 Partite",
+        "X-WR-TIMEZONE:Europe/Rome",
+        ...validBlocks,
+        "END:VCALENDAR"
+      ].join("\r\n");
+
+      const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    function downloadMatchIcs(matchId) {
+      const m = matchId
+        ? state.matches.find(x => x.id === matchId)
+        : state.nextCmbMatch;
+      if (!m) return;
+      const cleanName = `cmb-rho-${m.date.replace(/\//g, "-")}.ics`;
+      triggerIcsDownload([m], cleanName);
+    }
+
+    function downloadNextMatchIcs() {
+      if (!state.nextCmbMatch) return;
+      downloadMatchIcs(state.nextCmbMatch.id);
+    }
+
+    function downloadAllCmbSeasonIcs() {
+      const cmbFuture = state.matches.filter(m => m.isCmb && m.date.includes("/"));
+      triggerIcsDownload(cmbFuture, "calendario-cmb-rho-1969.ics");
+    }
+
+    // ====================================================
+    // 3. COSTRUZIONE HERO CARD + BOTTONI AZIONE RAPIDA
+    // ====================================================
+    function buildHeroCardHtml(m, countdownTargetId, showQuickActions = false) {
       if (!m) {
         return `
           <div class="hero-card-cmb text-white rounded-3xl p-6 text-center text-xs text-zinc-400 shadow-xl">
@@ -341,21 +518,22 @@
       const opponent = m.isCmbHome ? m.awayTeam : m.homeTeam;
       const badgeText = m.isCmbHome ? "IN CASA" : "TRASFERTA";
       const { title: gymShort } = splitGymTitleAndSub(m.gym);
+      const safeId = m.id.replace(/'/g, "\\'");
 
       return `
         <div class="hero-card-cmb text-white rounded-3xl p-5 shadow-xl relative overflow-hidden">
-          <!-- Top Row: Pill Prossima Partita + Badge Trasferta/Casa -->
+          <!-- Top Row -->
           <div class="flex items-center justify-between mb-5">
             <div class="flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse shadow-[0_0_8px_#fff]"></span>
-              <span class="text-[11px] font-extrabold uppercase tracking-widest text-zinc-200">Prossima Partita</span>
+              <span class="text-[11px] font-extrabold uppercase tracking-widest text-zinc-200">Prossima Partita • ${m.round}</span>
             </div>
-            <span class="glass-box text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider">
+            <span class="glass-box text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider shrink-0">
               ${badgeText}
             </span>
           </div>
 
-          <!-- Center Row: Icona Basket + VS Avversario + Pin Palestra -->
+          <!-- Center Row -->
           <div class="flex items-center gap-4 my-5">
             <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#CC2918] to-amber-600 p-0.5 shrink-0 shadow-lg">
               <div class="w-full h-full rounded-full bg-[#151518] flex items-center justify-center text-3xl">
@@ -374,7 +552,7 @@
             </div>
           </div>
 
-          <!-- Bottom Row: Countdown Boxes a sinistra + Ora e Data a destra -->
+          <!-- Bottom Row: Countdown + Data/Ora -->
           <div class="flex items-end justify-between gap-2 pt-3 border-t border-white/10">
             <div id="${countdownTargetId}" class="flex items-center gap-1.5"></div>
             <div class="text-right shrink-0">
@@ -382,6 +560,123 @@
               <div class="text-[11px] text-zinc-400 font-medium mt-1">${formatLongDate(m.date)}</div>
             </div>
           </div>
+
+          ${showQuickActions ? `
+          <!-- Pulsanti Azione Rapida: WhatsApp & Calendario .ics -->
+          <div class="grid grid-cols-2 gap-2 mt-4 pt-3.5 border-t border-white/10">
+            <button onclick="shareMatchOnWhatsApp('${safeId}')" class="glass-box hover:bg-white/15 active:scale-95 text-white text-[11px] font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition">
+              <span>💬</span>
+              <span>Invia su WhatsApp</span>
+            </button>
+            <button onclick="downloadMatchIcs('${safeId}')" class="bg-[#CC2918] hover:bg-red-700 active:scale-95 text-white text-[11px] font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md transition">
+              <span>📅</span>
+              <span>Salva in Calendario</span>
+            </button>
+          </div>` : ""}
+        </div>
+      `;
+    }
+
+    // ====================================================
+    // 4. CARD TESTA A TESTA (SCOUTING PRE-PARTITA)
+    // ====================================================
+    function buildHeadToHeadCardHtml(m) {
+      if (!m) return "";
+      const cmb = state.standings.find(s => s.isCmb);
+      const opponentName = m.isCmbHome ? m.awayTeam : m.homeTeam;
+      const opp = findStanding(opponentName);
+
+      if (!cmb || !opp) return "";
+
+      // Calcola percentuale per le barre di confronto
+      const totalPpg = (cmb.ppg || 1) + (opp.ppg || 1);
+      const cmbPpgPct = Math.round(((cmb.ppg || 1) / totalPpg) * 100);
+
+      const totalOppg = (cmb.oppg || 1) + (opp.oppg || 1);
+      const cmbOppgPct = Math.round(((cmb.oppg || 1) / totalOppg) * 100);
+
+      // Cerca se c'è già stato uno scontro diretto giocato in stagione
+      const prevH2H = state.matches.find(
+        x =>
+          x.played &&
+          x.isCmb &&
+          (isSameTeam(x.homeTeam, opponentName) || isSameTeam(x.awayTeam, opponentName))
+      );
+
+      let prevHtml = `<div class="text-[11px] text-gray-400 text-center pt-2 border-t border-gray-100">Primo scontro diretto stagionale</div>`;
+      if (prevH2H) {
+        const cmbScore = prevH2H.isCmbHome ? prevH2H.homeScore : prevH2H.awayScore;
+        const oppScore = prevH2H.isCmbHome ? prevH2H.awayScore : prevH2H.homeScore;
+        const diff = cmbScore - oppScore;
+        const diffLabel = diff > 0 ? `+${diff} CMB` : `${diff} CMB`;
+        prevHtml = `
+          <div class="flex items-center justify-between text-[11px] pt-2.5 border-t border-gray-100">
+            <span class="text-gray-400 font-semibold">Precedente (${prevH2H.round}):</span>
+            <span class="font-extrabold ${diff > 0 ? 'text-emerald-600' : 'text-[#CC2918]'}">
+              ${prevH2H.homeScore}-${prevH2H.awayScore} (${diffLabel})
+            </span>
+          </div>`;
+      }
+
+      return `
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
+                ⚔️
+              </div>
+              <div>
+                <h3 class="text-sm font-extrabold text-gray-900">Testa a Testa</h3>
+                <p class="text-[11px] text-gray-400">Scouting pre-partita e medie</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-extrabold uppercase bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+              Confronto
+            </span>
+          </div>
+
+          <!-- Header Squadre -->
+          <div class="grid grid-cols-3 items-center text-center bg-gray-50 rounded-2xl p-3">
+            <div>
+              <div class="text-xs font-black text-[#CC2918] truncate">C.M.B. RHO</div>
+              <div class="text-lg font-black text-gray-900 mt-0.5">${cmb.position}°</div>
+              <div class="text-[10px] text-gray-400 font-bold">${cmb.points} PT (${cmb.won}V-${cmb.lost}P)</div>
+            </div>
+            <div class="text-[10px] font-black text-gray-300 uppercase">VS</div>
+            <div>
+              <div class="text-xs font-black text-gray-800 truncate">${opp.team}</div>
+              <div class="text-lg font-black text-gray-900 mt-0.5">${opp.position}°</div>
+              <div class="text-[10px] text-gray-400 font-bold">${opp.points} PT (${opp.won}V-${opp.lost}P)</div>
+            </div>
+          </div>
+
+          <!-- Barra Media Punti Segnati (MPP) -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-extrabold">
+              <span class="text-[#CC2918]">${cmb.ppg}</span>
+              <span class="text-[11px] text-gray-400 font-semibold">Media Punti Segnati (MPP)</span>
+              <span class="text-gray-800">${opp.ppg}</span>
+            </div>
+            <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden flex">
+              <div class="bg-[#CC2918] h-full" style="width: ${cmbPpgPct}%"></div>
+              <div class="bg-zinc-700 h-full" style="width: ${100 - cmbPpgPct}%"></div>
+            </div>
+          </div>
+
+          <!-- Barra Media Punti Subiti (MSP) -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-extrabold">
+              <span class="text-[#CC2918]">${cmb.oppg}</span>
+              <span class="text-[11px] text-gray-400 font-semibold">Media Punti Subiti (MSP)</span>
+              <span class="text-gray-800">${opp.oppg}</span>
+            </div>
+            <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden flex">
+              <div class="bg-[#CC2918] h-full" style="width: ${cmbOppgPct}%"></div>
+              <div class="bg-zinc-700 h-full" style="width: ${100 - cmbOppgPct}%"></div>
+            </div>
+          </div>
+
+          ${prevHtml}
         </div>
       `;
     }
@@ -489,14 +784,13 @@
       const cmbRow = state.standings.find(s => s.isCmb) || null;
 
       if (!m) {
-        container.innerHTML = buildHeroCardHtml(null, "homeCountdown");
+        container.innerHTML = buildHeroCardHtml(null, "homeCountdown", false);
         return;
       }
 
       const { title: gymTitle, sub: gymSub } = splitGymTitleAndSub(m.gym);
       const safeGymQuery = m.gym.replace(/'/g, "\\'");
 
-      // Prepara i 5 slot "Ultime 5" come nella Foto 1
       const last5 = cmbRow && cmbRow.last5 ? cmbRow.last5 : [];
       const slots = [];
       for (let i = 0; i < 5; i++) {
@@ -523,10 +817,10 @@
       }
 
       container.innerHTML = `
-        <!-- 1. HERO CARD PROSSIMA PARTITA (Foto 1) -->
-        ${buildHeroCardHtml(m, "homeCountdown")}
+        <!-- 1. HERO CARD PROSSIMA PARTITA + WHATSAPP & .ICS -->
+        ${buildHeroCardHtml(m, "homeCountdown", true)}
 
-        <!-- 2. CARD PALESTRA VISUAL + GOOGLE MAPS (Foto 1) -->
+        <!-- 2. CARD PALESTRA VISUAL + GOOGLE MAPS -->
         <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
           <div class="arena-banner p-5 pt-10 text-white relative">
             <span class="absolute top-3.5 right-4 bg-white/15 backdrop-blur-xs text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
@@ -548,7 +842,10 @@
           </button>
         </div>
 
-        <!-- 3. CARD ULTIME 5 & RENDIMENTO CASA/TRASFERTA (Foto 1) -->
+        <!-- 3. CARD TESTA A TESTA (SCOUTING PRE-PARTITA) -->
+        ${buildHeadToHeadCardHtml(m)}
+
+        <!-- 4. CARD ULTIME 5 & RENDIMENTO -->
         <div onclick="openTeamSeason('C.M.B. RHO')" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4 cursor-pointer active:scale-[0.99] transition">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -585,7 +882,7 @@
           </div>
         </div>
 
-        <!-- 4. CARD PROSSIMI EVENTI (Foto 1) -->
+        <!-- 5. CARD PROSSIMI EVENTI -->
         <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-2">
           <div class="flex items-center gap-3 mb-2">
             <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
@@ -593,7 +890,7 @@
             </div>
             <div>
               <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
-              <p class="text-[11px] text-gray-400">Clicca per i dettagli e gli arbitri</p>
+              <p class="text-[11px] text-gray-400">Clicca per dettagli, WhatsApp o file .ics</p>
             </div>
           </div>
           <div>
@@ -603,9 +900,6 @@
       `;
     }
 
-    // ==========================================
-    // LOGICA SEZIONE CALENDARIO (FOTO 2 + FILTRI)
-    // ==========================================
     function setCalendarMode(mode) {
       state.calMode = mode;
       document.getElementById("calendarMonthView").classList.toggle("hidden", mode !== "month");
@@ -678,7 +972,7 @@
     }
 
     function renderMonthlyCalendar() {
-      document.getElementById("calendarHeroBox").innerHTML = buildHeroCardHtml(state.nextCmbMatch, "calCountdown");
+      document.getElementById("calendarHeroBox").innerHTML = buildHeroCardHtml(state.nextCmbMatch, "calCountdown", false);
 
       const { year, month } = state.monthYear;
       document.getElementById("monthLabel").innerText = `${MONTHS_NAMES[month]} ${year}`;
@@ -689,8 +983,6 @@
       const firstDay = new Date(year, month, 1);
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       const prevMonthDays = new Date(year, month, 0).getDate();
-
-      // Converte indice giorno (Lunedì = 0 ... Domenica = 6)
       const startOffset = (firstDay.getDay() + 6) % 7;
 
       const cells = [];
@@ -737,7 +1029,6 @@
 
       document.getElementById("monthGrid").innerHTML = cells.join("");
 
-      // Renderizza Card del Giorno Selezionato (come in Foto 2)
       const dayMatches = teamMatches.filter(m => m.date === state.selectedDateStr);
       const dateCard = document.getElementById("selectedDateCard");
       const headerTitle = state.selectedDateStr
@@ -769,7 +1060,6 @@
         `;
       }
 
-      // Renderizza Prossimi Eventi nella vista Calendario (come in Foto 2)
       const upcomingForTeam = teamMatches
         .filter(m => !m.played && m.dateNum >= state.todayNum)
         .sort((a, b) => a.dateNum - b.dateNum)
@@ -782,7 +1072,7 @@
           </div>
           <div>
             <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
-            <p class="text-[11px] text-gray-400">Clicca per i dettagli</p>
+            <p class="text-[11px] text-gray-400">Clicca per dettagli, WhatsApp o file .ics</p>
           </div>
         </div>
         <div>
@@ -795,6 +1085,7 @@
 
     function renderMatchCardHtml(m) {
       const safeGymQuery = m.gym.replace(/'/g, "\\'");
+      const safeId = m.id.replace(/'/g, "\\'");
       return `
         <div class="bg-[#0F0F11] text-white rounded-2xl p-4 border ${m.isCmb ? 'border-[#CC2918]' : 'border-zinc-800'} shadow-sm">
           <div class="flex justify-between text-[11px] text-zinc-400 mb-2">
@@ -808,11 +1099,14 @@
             </div>
             <div class="text-xs font-bold flex-1 text-right ${isSameTeam(m.awayTeam, 'C.M.B. RHO') ? 'text-[#CC2918]' : 'text-white'}">${m.awayTeam}</div>
           </div>
-          <div class="mt-3 pt-2.5 border-t border-zinc-800/80 text-[11px] text-zinc-300 space-y-1">
+          <div class="mt-3 pt-2.5 border-t border-zinc-800/80 text-[11px] text-zinc-300 space-y-1.5">
             <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(" • ")}</div>
             <div class="flex items-center justify-between pt-1">
               <span class="text-zinc-400 truncate pr-2">📍 ${m.gym}</span>
-              <button onclick="openMaps('${safeGymQuery}')" class="text-[#CC2918] font-bold shrink-0">Maps ↗</button>
+              <div class="flex items-center gap-2 shrink-0">
+                <button onclick="downloadMatchIcs('${safeId}')" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2.5 py-1 rounded-lg font-bold text-[10px]">📅 .ics</button>
+                <button onclick="openMaps('${safeGymQuery}')" class="text-[#CC2918] font-bold">Maps ↗</button>
+              </div>
             </div>
           </div>
         </div>
@@ -897,6 +1191,7 @@
       const modal = document.getElementById("matchModal");
       const content = document.getElementById("matchModalContent");
       const safeGymQuery = m.gym.replace(/'/g, "\\'");
+      const safeId = m.id.replace(/'/g, "\\'");
 
       content.innerHTML = `
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
@@ -914,6 +1209,14 @@
           <div>📅 <strong>Data e Ora:</strong> ${m.date} • Ore ${m.time}</div>
           <div>📍 <strong>Campo:</strong> ${m.gym}</div>
           <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(" • ")}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="shareMatchOnWhatsApp('${safeId}')" class="bg-emerald-600 text-white font-bold text-xs py-3 rounded-2xl shadow-sm">
+            💬 WhatsApp
+          </button>
+          <button onclick="downloadMatchIcs('${safeId}')" class="bg-[#0F0F11] text-white font-bold text-xs py-3 rounded-2xl shadow-sm">
+            📅 Salva .ics
+          </button>
         </div>
         <button onclick="openMaps('${safeGymQuery}')" class="w-full bg-[#CC2918] text-white font-bold text-xs py-3.5 rounded-2xl shadow-md">
           🧭 Apri Palestra in Google Maps
@@ -960,7 +1263,6 @@
         state.upcomingCmbMatches = data.upcomingCmbMatches || [];
         state.todayNum = data.todayNum || 20261029;
 
-        // Imposta la data selezionata nel calendario sulla prossima partita del CMB
         if (!state.selectedDateStr && state.nextCmbMatch && state.nextCmbMatch.date.includes("/")) {
           state.selectedDateStr = state.nextCmbMatch.date;
           const [dd, mm, yyyy] = state.nextCmbMatch.date.split("/").map(Number);
@@ -969,7 +1271,6 @@
 
         document.getElementById("syncTime").innerText = (data.updatedAt || "").split(",")[1] || "OK";
 
-        // Popola i menu a tendina delle Giornate
         if (data.availableRounds && data.availableRounds.length > 0) {
           const rSel = document.getElementById("roundSelect");
           rSel.innerHTML =
@@ -978,7 +1279,6 @@
           if (data.currentRoundKey) rSel.value = data.currentRoundKey;
         }
 
-        // Popola i menu a tendina delle 12 Squadre
         const allTeams = state.standings.length > 0
           ? state.standings.map(s => s.team)
           : Array.from(new Set(state.matches.flatMap(m => [m.homeTeam, m.awayTeam])));
