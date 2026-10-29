@@ -10,91 +10,228 @@
   <link rel="apple-touch-icon" href="/logo-cmb.png" />
   <title>C.M.B. RHO 1969 — DR4 Girone K</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #F3F4F6;
+      color: #0F0F11;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .hero-card-cmb {
+      background: radial-gradient(circle at 88% 92%, rgba(204, 41, 24, 0.55) 0%, rgba(15, 15, 17, 0.96) 58%, #0B0B0D 100%);
+    }
+    .arena-banner {
+      background:
+        linear-gradient(180deg, rgba(11,11,13,0.25) 0%, rgba(11,11,13,0.88) 75%, #0B0B0D 100%),
+        radial-gradient(circle at 50% 20%, rgba(204,41,24,0.45), rgba(15,15,17,0.95));
+    }
+    .glass-box {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+  </style>
 </head>
-<body class="bg-[#FFFFFF] text-[#0F0F11] min-h-screen pb-24 font-sans select-none">
+<body class="min-h-screen pb-24 select-none">
 
-  <!-- HEADER -->
-  <header class="sticky top-0 z-30 bg-[#0F0F11] text-white border-b-4 border-[#CC2918] px-4 py-3 shadow-lg">
+  <!-- TOP BAR COMPATTO E MODERNO -->
+  <header class="sticky top-0 z-30 bg-[#0F0F11]/95 backdrop-blur-md text-white px-4 py-3 border-b border-white/10">
     <div class="max-w-md mx-auto flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-11 h-11 rounded-full bg-[#CC2918] border-2 border-white flex items-center justify-center font-black text-xs overflow-hidden shrink-0">
+        <div class="w-10 h-10 rounded-full bg-[#CC2918] border border-white/30 flex items-center justify-center font-black text-xs overflow-hidden shrink-0 shadow-md">
           <img src="/logo-cmb.png" alt="CMB" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerText='CMB';" />
         </div>
         <div>
-          <h1 class="font-black text-lg tracking-wider leading-none">
+          <h1 class="font-extrabold text-base tracking-tight leading-none">
             C.M.B. RHO <span class="text-[#CC2918]">1969</span>
           </h1>
-          <p class="text-[11px] text-gray-400 mt-0.5">DR4 Lombardia • Girone K (85812)</p>
+          <p class="text-[11px] text-zinc-400 mt-0.5 font-medium">DR4 Lombardia • Girone K • <span id="syncTime">Sync...</span></p>
         </div>
       </div>
-      <button id="syncBtn" onclick="loadFipData(true)" class="bg-[#CC2918] active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
-        Aggiorna FIP
+      <button id="syncBtn" onclick="loadFipData(true)" class="bg-white/10 hover:bg-white/15 active:scale-95 text-white text-xs font-semibold px-3 py-2 rounded-xl border border-white/10 flex items-center gap-1.5 transition">
+        <span id="syncIcon">↻</span>
+        <span>Aggiorna</span>
       </button>
     </div>
   </header>
 
   <!-- CONTENUTO PRINCIPALE -->
-  <main class="max-w-md mx-auto px-4 pt-4 space-y-4">
-    <!-- Barra Stato Sync -->
-    <div class="bg-[#0F0F11] text-white text-xs px-3.5 py-2.5 rounded-xl flex items-center justify-between">
-      <span>Sync FIP: <strong id="syncTime">Sincronizzazione...</strong></span>
-      <a href="https://fip.it/risultati/?group=campionati-regionali&regione_codice=LO&comitato_codice=PVA&sesso=M&codice_campionato=2DM&codice_fase=1&codice_girone=85812" target="_blank" class="text-[#CC2918] font-bold underline">Sito Ufficiale FIP ↗</a>
-    </div>
+  <main class="max-w-md mx-auto px-3.5 pt-3.5 space-y-4">
 
-    <!-- Box Messaggi / Errori -->
-    <div id="errorBox" class="hidden bg-[#0F0F11] border-l-4 border-[#CC2918] text-white p-4 rounded-xl text-xs space-y-1"></div>
+    <!-- Box Errori -->
+    <div id="errorBox" class="hidden bg-red-950 border border-[#CC2918] text-white p-4 rounded-2xl text-xs"></div>
 
-    <!-- TAB 1: HOME (Prossima Partita + Campo Maps + Classifica Rapida + Ultimo Risultato) -->
+    <!-- ========================================== -->
+    <!-- SEZIONE 1: HOME (IDENTICA A FOTO 1)        -->
+    <!-- ========================================== -->
     <section id="tab-home" class="space-y-4">
-      <div id="homeContainer" class="bg-[#0F0F11] text-white rounded-2xl p-6 text-center text-xs text-gray-400">
-        Ricerca automatica della prossima partita del C.M.B. RHO su FIP.it...
+      <div id="homeContent" class="space-y-4">
+        <div class="hero-card-cmb text-white rounded-3xl p-6 text-center text-xs text-zinc-400 shadow-xl">
+          Sincronizzazione dati ufficiali FIP in corso...
+        </div>
       </div>
     </section>
 
-    <!-- TAB 2: CLASSIFICA -->
-    <section id="tab-standings" class="hidden">
-      <div class="bg-[#0F0F11] text-white rounded-2xl p-4 shadow-lg border border-zinc-800">
-        <h2 class="text-xs font-black uppercase tracking-wider text-[#CC2918] mb-3">Classifica Ufficiale FIP — Girone K</h2>
-        <div id="standingsContainer" class="text-xs text-gray-400 py-4 text-center">Caricamento classifica...</div>
-      </div>
-    </section>
+    <!-- ========================================== -->
+    <!-- SEZIONE 2: CALENDARIO (FOTO 2 + FILTRI)    -->
+    <!-- ========================================== -->
+    <section id="tab-calendar" class="hidden space-y-4">
+      <!-- Hero Prossima Partita in cima (come nella Foto 2) -->
+      <div id="calendarHeroBox"></div>
 
-    <!-- TAB 3: CALENDARIO E ARBITRI -->
-    <section id="tab-calendar" class="hidden space-y-3">
-      <div class="bg-[#0F0F11] text-white p-3 rounded-2xl flex items-center justify-between gap-2">
-        <select id="roundSelect" onchange="renderMatches()" class="bg-zinc-900 text-white text-xs rounded-lg px-3 py-2 border border-zinc-700 w-full">
-          <option value="ALL">Tutte le Giornate</option>
-        </select>
-        <button id="filterCmbBtn" onclick="toggleOnlyCmb()" class="text-xs font-bold px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-gray-300 shrink-0">
-          Solo CMB
+      <!-- Selettore Modalità Calendario -->
+      <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200/80 grid grid-cols-2 gap-1">
+        <button id="calModeMonth" onclick="setCalendarMode('month')" class="py-2 rounded-xl text-xs font-bold bg-[#0F0F11] text-white transition">
+          📅 Calendario Squadra
+        </button>
+        <button id="calModeLeague" onclick="setCalendarMode('league')" class="py-2 rounded-xl text-xs font-bold text-gray-500 hover:text-gray-900 transition">
+          🏀 Tutte le Partite Girone
         </button>
       </div>
-      <div id="matchesContainer" class="space-y-3"></div>
+
+      <!-- SOTTO-VISTA A: CALENDARIO MENSILE + EVENTI (COME IN FOTO 2) -->
+      <div id="calendarMonthView" class="space-y-4">
+        <!-- Scelta squadra per il calendario mensile (di default C.M.B. RHO) -->
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
+                📅
+              </div>
+              <div>
+                <h2 class="font-bold text-sm text-gray-900">Calendario</h2>
+                <p class="text-[11px] text-gray-400">Tutti gli eventi per squadra</p>
+              </div>
+            </div>
+            <select id="monthTeamSelect" onchange="onMonthTeamChange()" class="bg-gray-100 text-gray-800 text-[11px] font-bold rounded-xl px-2.5 py-2 border-0 focus:ring-2 focus:ring-[#CC2918] max-w-[165px] truncate">
+              <option value="CMB">C.M.B. RHO</option>
+            </select>
+          </div>
+
+          <!-- Navigazione Mese -->
+          <div class="flex items-center justify-between px-1 pt-1">
+            <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 font-bold">‹</button>
+            <div id="monthLabel" class="bg-gray-100 px-4 py-1.5 rounded-full text-xs font-bold text-gray-800 lowercase">
+              ottobre 2026
+            </div>
+            <button onclick="changeMonth(1)" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 font-bold">›</button>
+          </div>
+
+          <!-- Intestazione Giorni Settimana -->
+          <div class="grid grid-cols-7 text-center text-[11px] font-semibold text-gray-400 pt-1">
+            <div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div>
+          </div>
+
+          <!-- Griglia Giorni del Mese -->
+          <div id="monthGrid" class="grid grid-cols-7 gap-y-2 text-center text-xs"></div>
+        </div>
+
+        <!-- Card Giorno Selezionato (es. Giovedì 29 Ottobre) -->
+        <div id="selectedDateCard" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"></div>
+
+        <!-- Card Prossimi Eventi della Squadra -->
+        <div id="calendarUpcomingCard" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"></div>
+      </div>
+
+      <!-- SOTTO-VISTA B: ESPLORA CAMPIONATO PER GIORNATA O PER SQUADRA -->
+      <div id="calendarLeagueView" class="hidden space-y-3">
+        <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 space-y-3">
+          <div class="grid grid-cols-2 gap-2">
+            <button id="filterByRoundBtn" onclick="setLeagueFilterMode('round')" class="py-2 px-3 rounded-xl text-xs font-bold bg-[#CC2918] text-white transition">
+              Per Giornata
+            </button>
+            <button id="filterByTeamBtn" onclick="setLeagueFilterMode('team')" class="py-2 px-3 rounded-xl text-xs font-bold bg-gray-100 text-gray-600 transition">
+              Per Squadra
+            </button>
+          </div>
+
+          <!-- Dropdown Giornate -->
+          <div id="roundSelectWrapper">
+            <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Seleziona Giornata del Campionato</label>
+            <select id="roundSelect" onchange="renderLeagueMatches()" class="w-full bg-gray-50 text-gray-900 text-xs font-bold rounded-xl px-3 py-2.5 border border-gray-200 focus:outline-none">
+              <option value="ALL">Tutte le Giornate</option>
+            </select>
+          </div>
+
+          <!-- Dropdown Squadra (Tutte le partite di una singola squadra) -->
+          <div id="teamSelectWrapper" class="hidden">
+            <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Scegli la Squadra (22 Partite)</label>
+            <select id="teamSelect" onchange="renderLeagueMatches()" class="w-full bg-gray-50 text-gray-900 text-xs font-bold rounded-xl px-3 py-2.5 border border-gray-200 focus:outline-none">
+              <option value="ALL">Tutte le 12 Squadre</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Elenco Partite Filtrate -->
+        <div id="matchesContainer" class="space-y-3"></div>
+      </div>
     </section>
 
-    <!-- TAB 4: PALESTRE -->
+    <!-- ========================================== -->
+    <!-- SEZIONE 3: CLASSIFICA COMPLETA (PF/PS/DIFF)-->
+    <!-- ========================================== -->
+    <section id="tab-standings" class="hidden space-y-3">
+      <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <div>
+            <h2 class="text-sm font-extrabold text-gray-900">Classifica Girone K</h2>
+            <p class="text-[11px] text-gray-400">Tocca una squadra per vedere tutte le sue partite</p>
+          </div>
+          <span class="bg-red-50 text-[#CC2918] text-[10px] font-black px-2.5 py-1 rounded-full uppercase">FIP Live</span>
+        </div>
+        <div id="standingsContainer" class="overflow-x-auto text-xs text-gray-400 py-4 text-center">
+          Caricamento classifica...
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SEZIONE 4: PALESTRE DEL GIRONE             -->
+    <!-- ========================================== -->
     <section id="tab-gyms" class="hidden space-y-3">
-      <div class="bg-[#0F0F11] p-3 rounded-2xl">
-        <input id="gymSearch" type="text" oninput="renderGyms()" placeholder="Cerca squadra o palestra del Girone K..." class="bg-transparent text-white text-xs w-full focus:outline-none" />
+      <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2">
+        <span class="text-gray-400 text-sm">🔍</span>
+        <input id="gymSearch" type="text" oninput="renderGyms()" placeholder="Cerca squadra o palestra del Girone K..." class="bg-transparent text-gray-900 text-xs font-medium w-full focus:outline-none" />
       </div>
       <div id="gymsContainer" class="space-y-3"></div>
     </section>
+
   </main>
 
-  <!-- BARRA DI NAVIGAZIONE IN BASSO -->
-  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#0F0F11] border-t border-zinc-800 px-2 py-2">
+  <!-- MODAL DETTAGLIO PARTITA -->
+  <div id="matchModal" onclick="closeMatchModal(event)" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div onclick="event.stopPropagation()" class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4 shadow-2xl">
+      <div id="matchModalContent"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR (STILE APP PREMIUM) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 px-2 py-1.5">
     <div class="max-w-md mx-auto grid grid-cols-4 gap-1 text-center">
-      <button onclick="switchTab('home')" id="nav-home" class="py-2 rounded-xl text-xs font-black text-[#CC2918]">Home</button>
-      <button onclick="switchTab('standings')" id="nav-standings" class="py-2 rounded-xl text-xs font-bold text-gray-400">Classifica</button>
-      <button onclick="switchTab('calendar')" id="nav-calendar" class="py-2 rounded-xl text-xs font-bold text-gray-400">Calendario</button>
-      <button onclick="switchTab('gyms')" id="nav-gyms" class="py-2 rounded-xl text-xs font-bold text-gray-400">Palestre</button>
+      <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-[#CC2918] bg-red-50/80 font-bold text-[11px] transition">
+        <span class="text-base leading-none mb-0.5">🏠</span>
+        <span>Home</span>
+      </button>
+      <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-gray-400 font-semibold text-[11px] transition">
+        <span class="text-base leading-none mb-0.5">📅</span>
+        <span>Calendario</span>
+      </button>
+      <button onclick="switchTab('standings')" id="nav-standings" class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-gray-400 font-semibold text-[11px] transition">
+        <span class="text-base leading-none mb-0.5">🏆</span>
+        <span>Classifica</span>
+      </button>
+      <button onclick="switchTab('gyms')" id="nav-gyms" class="flex flex-col items-center justify-center py-1.5 rounded-2xl text-gray-400 font-semibold text-[11px] transition">
+        <span class="text-base leading-none mb-0.5">📍</span>
+        <span>Palestre</span>
+      </button>
     </div>
   </nav>
 
   <script>
     const GYMS = [
       { team: "C.M.B. RHO", gym: "Centro Sportivo Molinello", address: "Via Trecate 46, 20017 Rho (MI)", query: "Centro Sportivo Molinello Via Trecate Rho" },
-      { team: "SAN PAOLO RHO", gym: "Palestra San Paolo Rho", address: "Rho (MI)", query: "San Paolo Basket Rho Palestra" },
+      { team: "SAN PAOLO RHO", gym: "Palestra San Paolo Rho", address: "Via Cardinal Ferrari, Rho (MI)", query: "San Paolo Basket Rho Palestra" },
       { team: "VICTOR BASKET RHO", gym: "Palestra Victor Basket Rho", address: "Rho (MI)", query: "Victor Basket Rho Palestra" },
       { team: "UPN NERVIANO", gym: "Palestra Scuole Elementari", address: "Via Roma / Via L. da Vinci, 20014 Nerviano (MI)", query: "Via Leonardo da Vinci Nerviano Palestra" },
       { team: "BASKET PARABIAGO", gym: "Palazzetto dello Sport Parabiago", address: "Via Carso, Parabiago (MI)", query: "Palazzetto dello Sport Via Carso Parabiago" },
@@ -107,43 +244,709 @@
       { team: "S.LUIGI BASKET GARBAGNATE", gym: "Palestra OSL Garbagnate", address: "Garbagnate Milanese (MI)", query: "OSL Garbagnate Basket Palestra" }
     ];
 
+    const MONTHS_NAMES = [
+      "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
+      "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
+    ];
+    const MONTHS_SHORT = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+    const DAYS_SHORT = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+    const DAYS_FULL = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+
     let state = {
       standings: [],
       matches: [],
       nextCmbMatch: null,
-      lastCmbMatch: null,
+      upcomingCmbMatches: [],
       todayNum: 0,
-      onlyCmb: false,
+      calMode: "month", // 'month' | 'league'
+      leagueFilterMode: "round", // 'round' | 'team'
+      monthYear: { year: 2026, month: 9 }, // 9 = Ottobre (0-based)
+      selectedDateStr: "", // 'DD/MM/YYYY'
+      selectedMonthTeam: "CMB",
       countdownTimer: null
     };
 
     function switchTab(tab) {
-      ["home", "standings", "calendar", "gyms"].forEach(t => {
+      ["home", "calendar", "standings", "gyms"].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
         const btn = document.getElementById(`nav-${t}`);
         btn.className = t === tab
-          ? "py-2 rounded-xl text-xs font-black text-[#CC2918]"
-          : "py-2 rounded-xl text-xs font-bold text-gray-400";
+          ? "flex flex-col items-center justify-center py-1.5 rounded-2xl text-[#CC2918] bg-red-50/80 font-bold text-[11px] transition"
+          : "flex flex-col items-center justify-center py-1.5 rounded-2xl text-gray-400 font-semibold text-[11px] transition";
       });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function openMaps(query) {
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank");
     }
 
-    function findStandingForTeam(teamName) {
-      if (!teamName || !state.standings.length) return null;
-      const u = teamName.toUpperCase().trim();
-      return state.standings.find(s => {
-        const su = s.team.toUpperCase().trim();
-        return su === u || su.includes(u) || u.includes(su);
-      }) || null;
+    function normalizeKey(str) {
+      return (str || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    }
+
+    function isSameTeam(a, b) {
+      if (!a || !b) return false;
+      const ka = normalizeKey(a);
+      const kb = normalizeKey(b);
+      return ka === kb || ka.includes(kb) || kb.includes(ka);
+    }
+
+    function formatLongDate(dateStr) {
+      const m = (dateStr || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!m) return dateStr || "Data da definire";
+      const dd = parseInt(m[1], 10);
+      const mm = parseInt(m[2], 10) - 1;
+      const capMonth = MONTHS_NAMES[mm]
+        ? MONTHS_NAMES[mm].charAt(0).toUpperCase() + MONTHS_NAMES[mm].slice(1)
+        : "";
+      return `${dd} ${capMonth} ${m[3]}`;
+    }
+
+    function formatShortEventDate(dateStr) {
+      const m = (dateStr || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!m) return dateStr;
+      const dObj = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+      const dayName = DAYS_SHORT[dObj.getDay()];
+      const monthName = MONTHS_SHORT[Number(m[2]) - 1];
+      return `${dayName} ${ parseInt(m[1], 10) } ${monthName}`;
+    }
+
+    function formatFullDayHeader(dateStr) {
+      const m = (dateStr || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!m) return dateStr;
+      const dObj = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+      const dayName = DAYS_FULL[dObj.getDay()];
+      const monthName = MONTHS_NAMES[Number(m[2]) - 1];
+      const capMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+      return `${dayName} ${parseInt(m[1], 10)} ${capMonth}`;
+    }
+
+    function splitGymTitleAndSub(gymRaw) {
+      if (!gymRaw) return { title: "Palestra Comunale", sub: "Lombardia" };
+      const parts = gymRaw.split(",");
+      const title = parts[0].trim();
+      const sub = parts.slice(1).join(",").trim() || gymRaw;
+      return { title, sub };
+    }
+
+    function buildHeroCardHtml(m, countdownTargetId) {
+      if (!m) {
+        return `
+          <div class="hero-card-cmb text-white rounded-3xl p-6 text-center text-xs text-zinc-400 shadow-xl">
+            Nessuna gara in programma trovata.
+          </div>`;
+      }
+
+      const opponent = m.isCmbHome ? m.awayTeam : m.homeTeam;
+      const badgeText = m.isCmbHome ? "IN CASA" : "TRASFERTA";
+      const { title: gymShort } = splitGymTitleAndSub(m.gym);
+
+      return `
+        <div class="hero-card-cmb text-white rounded-3xl p-5 shadow-xl relative overflow-hidden">
+          <!-- Top Row: Pill Prossima Partita + Badge Trasferta/Casa -->
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse shadow-[0_0_8px_#fff]"></span>
+              <span class="text-[11px] font-extrabold uppercase tracking-widest text-zinc-200">Prossima Partita</span>
+            </div>
+            <span class="glass-box text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider">
+              ${badgeText}
+            </span>
+          </div>
+
+          <!-- Center Row: Icona Basket + VS Avversario + Pin Palestra -->
+          <div class="flex items-center gap-4 my-5">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#CC2918] to-amber-600 p-0.5 shrink-0 shadow-lg">
+              <div class="w-full h-full rounded-full bg-[#151518] flex items-center justify-center text-3xl">
+                🏀
+              </div>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">VS</div>
+              <div class="text-xl font-black leading-tight text-white break-words">
+                ${opponent}
+              </div>
+              <div class="text-xs text-zinc-400 mt-1 flex items-center gap-1 truncate">
+                <span>📍</span>
+                <span class="truncate">${gymShort}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: Countdown Boxes a sinistra + Ora e Data a destra -->
+          <div class="flex items-end justify-between gap-2 pt-3 border-t border-white/10">
+            <div id="${countdownTargetId}" class="flex items-center gap-1.5"></div>
+            <div class="text-right shrink-0">
+              <div class="text-xl font-black leading-none text-white">${m.time}</div>
+              <div class="text-[11px] text-zinc-400 font-medium mt-1">${formatLongDate(m.date)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateCountdownBoxes(match, elementId) {
+      const el = document.getElementById(elementId);
+      if (!el || !match || !match.date.includes("/")) return;
+
+      const [dd, mm, yyyy] = match.date.split("/").map(Number);
+      const [hh, min] = match.time.includes(":")
+        ? match.time.split(":").map(Number)
+        : [21, 15];
+
+      const target = new Date(yyyy, mm - 1, dd, hh, min, 0).getTime();
+      const diff = target - Date.now();
+
+      if (diff <= 0) {
+        el.innerHTML = `
+          <span class="bg-[#CC2918] text-white text-[11px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider">
+            🔥 In Campo Ora
+          </span>`;
+        return;
+      }
+
+      const totalHours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(totalHours / 24);
+      const hours = totalHours % 24;
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+      const secs = Math.floor((diff / 1000) % 60);
+
+      if (days > 0) {
+        el.innerHTML = `
+          <div class="text-center">
+            <div class="glass-box rounded-xl px-2.5 py-1.5 text-sm font-black text-white">${String(days).padStart(2, "0")}</div>
+            <div class="text-[8px] text-zinc-400 font-bold uppercase mt-1">GG</div>
+          </div>
+          <span class="text-zinc-500 font-bold text-xs -mt-3">:</span>
+          <div class="text-center">
+            <div class="glass-box rounded-xl px-2.5 py-1.5 text-sm font-black text-white">${String(hours).padStart(2, "0")}</div>
+            <div class="text-[8px] text-zinc-400 font-bold uppercase mt-1">ORE</div>
+          </div>
+          <span class="text-zinc-500 font-bold text-xs -mt-3">:</span>
+          <div class="text-center">
+            <div class="glass-box rounded-xl px-2.5 py-1.5 text-sm font-black text-white">${String(mins).padStart(2, "0")}</div>
+            <div class="text-[8px] text-zinc-400 font-bold uppercase mt-1">MIN</div>
+          </div>`;
+      } else {
+        el.innerHTML = `
+          <div class="text-center">
+            <div class="glass-box rounded-xl px-2.5 py-1.5 text-sm font-black text-white">${String(totalHours).padStart(2, "0")}</div>
+            <div class="text-[8px] text-zinc-400 font-bold uppercase mt-1">ORE</div>
+          </div>
+          <span class="text-zinc-500 font-bold text-xs -mt-3">:</span>
+          <div class="text-center">
+            <div class="glass-box rounded-xl px-2.5 py-1.5 text-sm font-black text-white">${String(mins).padStart(2, "0")}</div>
+            <div class="text-[8px] text-zinc-400 font-bold uppercase mt-1">MIN</div>
+          </div>
+          <span class="text-zinc-500 font-bold text-xs -mt-3">:</span>
+          <div class="text-center">
+            <div class="glass-box rounded-xl px-2.5 py-1.5 text-sm font-black text-white">${String(secs).padStart(2, "0")}</div>
+            <div class="text-[8px] text-zinc-400 font-bold uppercase mt-1">SEC</div>
+          </div>`;
+      }
+    }
+
+    function startGlobalCountdown() {
+      if (state.countdownTimer) clearInterval(state.countdownTimer);
+      const tick = () => {
+        if (state.nextCmbMatch) {
+          updateCountdownBoxes(state.nextCmbMatch, "homeCountdown");
+          updateCountdownBoxes(state.nextCmbMatch, "calCountdown");
+        }
+      };
+      tick();
+      state.countdownTimer = setInterval(tick, 1000);
+    }
+
+    function renderUpcomingListHtml(matchesList) {
+      if (!matchesList || matchesList.length === 0) {
+        return `<p class="text-xs text-gray-400 py-3 text-center">Nessun prossimo evento in programma.</p>`;
+      }
+
+      return matchesList.map(m => {
+        const isHome = m.isCmbHome;
+        const opponent = isHome ? m.awayTeam : m.homeTeam;
+        const safeId = m.id.replace(/'/g, "\\'");
+        return `
+          <div onclick="openMatchModal('${safeId}')" class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 cursor-pointer active:bg-gray-50 rounded-xl px-1 transition">
+            <div class="flex items-center gap-3 min-w-0 pr-2">
+              <span class="text-gray-400 text-sm shrink-0">${isHome ? "🏠" : "✈️"}</span>
+              <span class="text-xs font-bold text-gray-900 truncate">vs ${opponent}</span>
+            </div>
+            <div class="flex items-center gap-2.5 shrink-0 text-xs">
+              <span class="text-gray-400 font-medium">${formatShortEventDate(m.date)}</span>
+              <span class="font-extrabold text-gray-900">${m.time}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderHome() {
+      const container = document.getElementById("homeContent");
+      const m = state.nextCmbMatch;
+      const cmbRow = state.standings.find(s => s.isCmb) || null;
+
+      if (!m) {
+        container.innerHTML = buildHeroCardHtml(null, "homeCountdown");
+        return;
+      }
+
+      const { title: gymTitle, sub: gymSub } = splitGymTitleAndSub(m.gym);
+      const safeGymQuery = m.gym.replace(/'/g, "\\'");
+
+      // Prepara i 5 slot "Ultime 5" come nella Foto 1
+      const last5 = cmbRow && cmbRow.last5 ? cmbRow.last5 : [];
+      const slots = [];
+      for (let i = 0; i < 5; i++) {
+        if (last5[i]) {
+          const item = last5[i];
+          const isWin = item.result === "W";
+          slots.push(`
+            <div class="rounded-2xl py-2.5 px-1 text-center border ${
+              isWin
+                ? "bg-emerald-50/90 border-emerald-200 text-emerald-700"
+                : "bg-red-50/90 border-red-200 text-[#CC2918]"
+            }">
+              <div class="text-xs font-black">${item.result}</div>
+              <div class="text-[10px] font-bold mt-0.5">${item.score}</div>
+            </div>
+          `);
+        } else {
+          slots.push(`
+            <div class="rounded-2xl py-2.5 px-1 text-center bg-gray-50 border border-gray-100 text-gray-300 flex items-center justify-center">
+              <span class="text-xs font-bold">-</span>
+            </div>
+          `);
+        }
+      }
+
+      container.innerHTML = `
+        <!-- 1. HERO CARD PROSSIMA PARTITA (Foto 1) -->
+        ${buildHeroCardHtml(m, "homeCountdown")}
+
+        <!-- 2. CARD PALESTRA VISUAL + GOOGLE MAPS (Foto 1) -->
+        <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
+          <div class="arena-banner p-5 pt-10 text-white relative">
+            <span class="absolute top-3.5 right-4 bg-white/15 backdrop-blur-xs text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+              ${m.round}
+            </span>
+            <h3 class="text-lg font-black leading-tight">${gymTitle}</h3>
+            <p class="text-xs text-zinc-300 mt-1">${gymSub}</p>
+            <div class="mt-3 pt-2.5 border-t border-white/15 flex items-center gap-2 text-[11px] text-zinc-200">
+              <span>🎽</span>
+              <span class="truncate"><strong>Arbitri:</strong> ${m.referees.join(" • ")}</span>
+            </div>
+          </div>
+          <button onclick="openMaps('${safeGymQuery}')" class="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50 active:bg-gray-100 transition">
+            <div class="flex items-center gap-3">
+              <span class="w-8 h-8 rounded-full bg-red-50 text-[#CC2918] flex items-center justify-center text-sm">📍</span>
+              <span class="text-xs font-bold text-gray-800">Apri in Google Maps</span>
+            </div>
+            <span class="text-gray-400 font-bold text-base">›</span>
+          </button>
+        </div>
+
+        <!-- 3. CARD ULTIME 5 & RENDIMENTO CASA/TRASFERTA (Foto 1) -->
+        <div onclick="openTeamSeason('C.M.B. RHO')" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4 cursor-pointer active:scale-[0.99] transition">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
+                📈
+              </div>
+              <div>
+                <h3 class="text-sm font-extrabold text-gray-900">Ultime 5</h3>
+                <p class="text-[11px] text-gray-400">Tocca per la stagione intera</p>
+              </div>
+            </div>
+            ${cmbRow ? `
+              <span class="bg-[#0F0F11] text-white text-[11px] font-extrabold px-3 py-1 rounded-full">
+                ${cmbRow.position}° posto • ${cmbRow.points} PT
+              </span>` : ""}
+          </div>
+
+          <div class="grid grid-cols-5 gap-2">
+            ${slots.join("")}
+          </div>
+
+          <div class="pt-3 border-t border-gray-100 grid grid-cols-3 text-center text-xs text-gray-500">
+            <div>
+              🏠 Casa <strong class="text-gray-900 ml-0.5">${cmbRow ? cmbRow.homeRecord : "0-0"}</strong>
+            </div>
+            <div class="border-x border-gray-100">
+              ✈️ Trasf. <strong class="text-gray-900 ml-0.5">${cmbRow ? cmbRow.awayRecord : "0-0"}</strong>
+            </div>
+            <div>
+              🏀 Diff. <strong class="${cmbRow && cmbRow.diff >= 0 ? 'text-emerald-600' : 'text-[#CC2918]'} ml-0.5">
+                ${cmbRow ? (cmbRow.diff > 0 ? `+${cmbRow.diff}` : cmbRow.diff) : "0"}
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. CARD PROSSIMI EVENTI (Foto 1) -->
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-2">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
+              📅
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
+              <p class="text-[11px] text-gray-400">Clicca per i dettagli e gli arbitri</p>
+            </div>
+          </div>
+          <div>
+            ${renderUpcomingListHtml(state.upcomingCmbMatches)}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // LOGICA SEZIONE CALENDARIO (FOTO 2 + FILTRI)
+    // ==========================================
+    function setCalendarMode(mode) {
+      state.calMode = mode;
+      document.getElementById("calendarMonthView").classList.toggle("hidden", mode !== "month");
+      document.getElementById("calendarLeagueView").classList.toggle("hidden", mode !== "league");
+
+      document.getElementById("calModeMonth").className = mode === "month"
+        ? "py-2 rounded-xl text-xs font-bold bg-[#0F0F11] text-white transition"
+        : "py-2 rounded-xl text-xs font-bold text-gray-500 hover:text-gray-900 transition";
+
+      document.getElementById("calModeLeague").className = mode === "league"
+        ? "py-2 rounded-xl text-xs font-bold bg-[#0F0F11] text-white transition"
+        : "py-2 rounded-xl text-xs font-bold text-gray-500 hover:text-gray-900 transition";
+    }
+
+    function setLeagueFilterMode(mode) {
+      state.leagueFilterMode = mode;
+      document.getElementById("roundSelectWrapper").classList.toggle("hidden", mode !== "round");
+      document.getElementById("teamSelectWrapper").classList.toggle("hidden", mode !== "team");
+
+      document.getElementById("filterByRoundBtn").className = mode === "round"
+        ? "py-2 px-3 rounded-xl text-xs font-bold bg-[#CC2918] text-white transition"
+        : "py-2 px-3 rounded-xl text-xs font-bold bg-gray-100 text-gray-600 transition";
+
+      document.getElementById("filterByTeamBtn").className = mode === "team"
+        ? "py-2 px-3 rounded-xl text-xs font-bold bg-[#CC2918] text-white transition"
+        : "py-2 px-3 rounded-xl text-xs font-bold bg-gray-100 text-gray-600 transition";
+
+      renderLeagueMatches();
+    }
+
+    function openTeamSeason(teamName) {
+      switchTab("calendar");
+      setCalendarMode("league");
+      setLeagueFilterMode("team");
+      const teamSel = document.getElementById("teamSelect");
+      for (const opt of teamSel.options) {
+        if (isSameTeam(opt.value, teamName)) {
+          teamSel.value = opt.value;
+          break;
+        }
+      }
+      renderLeagueMatches();
+    }
+
+    function getMatchesForSelectedMonthTeam() {
+      const sel = state.selectedMonthTeam;
+      if (!sel || sel === "CMB") {
+        return state.matches.filter(m => m.isCmb);
+      }
+      return state.matches.filter(m => isSameTeam(m.homeTeam, sel) || isSameTeam(m.awayTeam, sel));
+    }
+
+    function onMonthTeamChange() {
+      state.selectedMonthTeam = document.getElementById("monthTeamSelect").value;
+      renderMonthlyCalendar();
+    }
+
+    function changeMonth(delta) {
+      let { year, month } = state.monthYear;
+      month += delta;
+      if (month < 0) { month = 11; year--; }
+      if (month > 11) { month = 0; year++; }
+      state.monthYear = { year, month };
+      renderMonthlyCalendar();
+    }
+
+    function selectCalendarDate(dateStr) {
+      state.selectedDateStr = dateStr;
+      renderMonthlyCalendar();
+    }
+
+    function renderMonthlyCalendar() {
+      document.getElementById("calendarHeroBox").innerHTML = buildHeroCardHtml(state.nextCmbMatch, "calCountdown");
+
+      const { year, month } = state.monthYear;
+      document.getElementById("monthLabel").innerText = `${MONTHS_NAMES[month]} ${year}`;
+
+      const teamMatches = getMatchesForSelectedMonthTeam();
+      const matchDatesSet = new Set(teamMatches.map(m => m.date));
+
+      const firstDay = new Date(year, month, 1);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const prevMonthDays = new Date(year, month, 0).getDate();
+
+      // Converte indice giorno (Lunedì = 0 ... Domenica = 6)
+      const startOffset = (firstDay.getDay() + 6) % 7;
+
+      const cells = [];
+      for (let i = startOffset - 1; i >= 0; i--) {
+        cells.push(`<div class="py-2 text-gray-300 font-medium">${prevMonthDays - i}</div>`);
+      }
+
+      const todayStr = (() => {
+        const s = String(state.todayNum);
+        if (s.length !== 8) return "";
+        return `${s.slice(6, 8)}/${s.slice(4, 6)}/${s.slice(0, 4)}`;
+      })();
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dd = String(d).padStart(2, "0");
+        const mm = String(month + 1).padStart(2, "0");
+        const fullDate = `${dd}/${mm}/${year}`;
+        const hasMatch = matchDatesSet.has(fullDate);
+        const isSelected = state.selectedDateStr === fullDate;
+        const isToday = todayStr === fullDate;
+
+        cells.push(`
+          <button onclick="selectCalendarDate('${fullDate}')" class="flex flex-col items-center justify-center py-1 relative">
+            <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition ${
+              isSelected
+                ? "bg-[#CC2918] text-white shadow-md"
+                : isToday
+                ? "bg-red-50 text-[#CC2918]"
+                : "text-gray-800 hover:bg-gray-100"
+            }">
+              ${d}
+            </span>
+            <span class="w-1.5 h-1.5 rounded-full mt-0.5 ${
+              hasMatch ? (isSelected ? "bg-[#0F0F11]" : "bg-[#CC2918]") : "bg-transparent"
+            }"></span>
+          </button>
+        `);
+      }
+
+      const trailing = (7 - (cells.length % 7)) % 7;
+      for (let i = 1; i <= trailing; i++) {
+        cells.push(`<div class="py-2 text-gray-300 font-medium">${i}</div>`);
+      }
+
+      document.getElementById("monthGrid").innerHTML = cells.join("");
+
+      // Renderizza Card del Giorno Selezionato (come in Foto 2)
+      const dayMatches = teamMatches.filter(m => m.date === state.selectedDateStr);
+      const dateCard = document.getElementById("selectedDateCard");
+      const headerTitle = state.selectedDateStr
+        ? formatFullDayHeader(state.selectedDateStr)
+        : "Seleziona una data";
+
+      if (dayMatches.length === 0) {
+        dateCard.innerHTML = `
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900">${headerTitle}</h3>
+              <p class="text-[11px] text-gray-400">Nessun evento</p>
+            </div>
+          </div>
+          <div class="py-6 text-center space-y-2">
+            <div class="w-11 h-11 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center mx-auto text-lg">📅</div>
+            <p class="text-xs font-bold text-gray-400">Nessuna partita in programma per questa data</p>
+          </div>
+        `;
+      } else {
+        dateCard.innerHTML = `
+          <div class="mb-3">
+            <h3 class="text-sm font-extrabold text-gray-900">${headerTitle}</h3>
+            <p class="text-[11px] text-[#CC2918] font-bold">${dayMatches.length} ${dayMatches.length === 1 ? "partita in programma" : "partite in programma"}</p>
+          </div>
+          <div class="space-y-3">
+            ${dayMatches.map(m => renderMatchCardHtml(m)).join("")}
+          </div>
+        `;
+      }
+
+      // Renderizza Prossimi Eventi nella vista Calendario (come in Foto 2)
+      const upcomingForTeam = teamMatches
+        .filter(m => !m.played && m.dateNum >= state.todayNum)
+        .sort((a, b) => a.dateNum - b.dateNum)
+        .slice(0, 6);
+
+      document.getElementById("calendarUpcomingCard").innerHTML = `
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
+            📅
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
+            <p class="text-[11px] text-gray-400">Clicca per i dettagli</p>
+          </div>
+        </div>
+        <div>
+          ${renderUpcomingListHtml(upcomingForTeam)}
+        </div>
+      `;
+
+      startGlobalCountdown();
+    }
+
+    function renderMatchCardHtml(m) {
+      const safeGymQuery = m.gym.replace(/'/g, "\\'");
+      return `
+        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 border ${m.isCmb ? 'border-[#CC2918]' : 'border-zinc-800'} shadow-sm">
+          <div class="flex justify-between text-[11px] text-zinc-400 mb-2">
+            <span class="font-bold text-[#CC2918]">${m.round}</span>
+            <span>${m.date} • ${m.time}</span>
+          </div>
+          <div class="flex items-center justify-between gap-2 my-2.5">
+            <div class="text-xs font-bold flex-1 ${isSameTeam(m.homeTeam, 'C.M.B. RHO') ? 'text-[#CC2918]' : 'text-white'}">${m.homeTeam}</div>
+            <div class="bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-xl font-black text-xs text-[#CC2918]">
+              ${m.played ? `${m.homeScore} - ${m.awayScore}` : "VS"}
+            </div>
+            <div class="text-xs font-bold flex-1 text-right ${isSameTeam(m.awayTeam, 'C.M.B. RHO') ? 'text-[#CC2918]' : 'text-white'}">${m.awayTeam}</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-zinc-800/80 text-[11px] text-zinc-300 space-y-1">
+            <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(" • ")}</div>
+            <div class="flex items-center justify-between pt-1">
+              <span class="text-zinc-400 truncate pr-2">📍 ${m.gym}</span>
+              <button onclick="openMaps('${safeGymQuery}')" class="text-[#CC2918] font-bold shrink-0">Maps ↗</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLeagueMatches() {
+      const box = document.getElementById("matchesContainer");
+      let list = [...state.matches];
+
+      if (state.leagueFilterMode === "round") {
+        const roundKey = document.getElementById("roundSelect").value;
+        if (roundKey && roundKey !== "ALL") {
+          list = list.filter(m => m.roundKey === roundKey);
+        }
+      } else {
+        const teamName = document.getElementById("teamSelect").value;
+        if (teamName && teamName !== "ALL") {
+          list = list.filter(m => isSameTeam(m.homeTeam, teamName) || isSameTeam(m.awayTeam, teamName));
+          list.sort((a, b) => a.dateNum - b.dateNum);
+        }
+      }
+
+      if (list.length === 0) {
+        box.innerHTML = `<div class="bg-white text-gray-400 text-xs p-6 rounded-3xl text-center border border-gray-100">Nessuna partita trovata per questo filtro.</div>`;
+        return;
+      }
+
+      box.innerHTML = list.map(m => renderMatchCardHtml(m)).join("");
+    }
+
+    function renderStandings() {
+      const box = document.getElementById("standingsContainer");
+      if (state.standings.length === 0) {
+        box.innerHTML = "Nessuna riga di classifica trovata.";
+        return;
+      }
+
+      box.innerHTML = `
+        <table class="w-full text-[11px] text-left border-collapse">
+          <thead>
+            <tr class="border-b border-gray-200 text-gray-400 font-bold uppercase text-[10px]">
+              <th class="py-2.5 pl-2">#</th>
+              <th class="py-2.5">Squadra</th>
+              <th class="py-2.5 text-center text-[#CC2918]">PT</th>
+              <th class="py-2.5 text-center">G</th>
+              <th class="py-2.5 text-center">V</th>
+              <th class="py-2.5 text-center">P</th>
+              <th class="py-2.5 text-center">PF</th>
+              <th class="py-2.5 text-center">PS</th>
+              <th class="py-2.5 text-center pr-2">+/-</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${state.standings.map(r => {
+              const diffStr = r.diff > 0 ? `+${r.diff}` : `${r.diff}`;
+              const safeTeam = r.team.replace(/'/g, "\\'");
+              return `
+                <tr onclick="openTeamSeason('${safeTeam}')" class="border-b border-gray-100 last:border-0 cursor-pointer transition ${
+                  r.isCmb ? "bg-red-50/90 font-extrabold text-gray-900" : "hover:bg-gray-50 text-gray-800"
+                }">
+                  <td class="py-3 pl-2 font-bold ${r.isCmb ? 'text-[#CC2918]' : 'text-gray-400'}">${r.position}</td>
+                  <td class="py-3 pr-2 font-bold truncate max-w-[125px]">${r.team}</td>
+                  <td class="py-3 text-center font-black text-[#CC2918] text-xs">${r.points}</td>
+                  <td class="py-3 text-center font-semibold">${r.played}</td>
+                  <td class="py-3 text-center text-emerald-600 font-bold">${r.won}</td>
+                  <td class="py-3 text-center text-red-500 font-bold">${r.lost}</td>
+                  <td class="py-3 text-center text-gray-600">${r.pf}</td>
+                  <td class="py-3 text-center text-gray-600">${r.ps}</td>
+                  <td class="py-3 text-center pr-2 font-bold ${r.diff >= 0 ? 'text-emerald-600' : 'text-red-500'}">${diffStr}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function openMatchModal(matchId) {
+      const m = state.matches.find(x => x.id === matchId);
+      if (!m) return;
+      const modal = document.getElementById("matchModal");
+      const content = document.getElementById("matchModalContent");
+      const safeGymQuery = m.gym.replace(/'/g, "\\'");
+
+      content.innerHTML = `
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+          <span class="bg-red-50 text-[#CC2918] text-[10px] font-black uppercase px-2.5 py-1 rounded-full">${m.round}</span>
+          <button onclick="closeMatchModal()" class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 font-bold text-sm">✕</button>
+        </div>
+        <div class="text-center space-y-2 py-2">
+          <div class="text-base font-black text-gray-900">${m.homeTeam}</div>
+          <div class="inline-block bg-[#0F0F11] text-white font-black text-xs px-3.5 py-1 rounded-xl">
+            ${m.played ? `${m.homeScore} - ${m.awayScore}` : "VS"}
+          </div>
+          <div class="text-base font-black text-gray-900">${m.awayTeam}</div>
+        </div>
+        <div class="bg-gray-50 rounded-2xl p-4 text-xs space-y-2 text-gray-700">
+          <div>📅 <strong>Data e Ora:</strong> ${m.date} • Ore ${m.time}</div>
+          <div>📍 <strong>Campo:</strong> ${m.gym}</div>
+          <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(" • ")}</div>
+        </div>
+        <button onclick="openMaps('${safeGymQuery}')" class="w-full bg-[#CC2918] text-white font-bold text-xs py-3.5 rounded-2xl shadow-md">
+          🧭 Apri Palestra in Google Maps
+        </button>
+      `;
+      modal.classList.remove("hidden");
+    }
+
+    function closeMatchModal() {
+      document.getElementById("matchModal").classList.add("hidden");
+    }
+
+    function renderGyms() {
+      const q = (document.getElementById("gymSearch").value || "").toLowerCase();
+      const box = document.getElementById("gymsContainer");
+      box.innerHTML = GYMS.filter(g => g.team.toLowerCase().includes(q) || g.address.toLowerCase().includes(q)).map(g => `
+        <div class="bg-white text-gray-900 rounded-3xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-[11px] font-black text-[#CC2918] truncate">${g.team}</div>
+            <div class="text-sm font-extrabold text-gray-900 truncate">${g.gym}</div>
+            <div class="text-xs text-gray-400 truncate">${g.address}</div>
+          </div>
+          <button onclick="openMaps('${g.query}')" class="bg-[#0F0F11] hover:bg-[#CC2918] text-white text-xs font-bold px-4 py-2.5 rounded-2xl shrink-0 transition">
+            Maps ↗
+          </button>
+        </div>
+      `).join("");
     }
 
     async function loadFipData(force = false) {
-      const btn = document.getElementById("syncBtn");
+      const icon = document.getElementById("syncIcon");
       const errBox = document.getElementById("errorBox");
-      btn.innerText = "Sync...";
+      icon.classList.add("animate-spin");
       errBox.classList.add("hidden");
 
       try {
@@ -154,332 +957,53 @@
         state.standings = data.standings || [];
         state.matches = data.matches || [];
         state.nextCmbMatch = data.nextCmbMatch || null;
-        state.lastCmbMatch = data.lastCmbMatch || null;
-        state.todayNum = data.todayNum || 0;
+        state.upcomingCmbMatches = data.upcomingCmbMatches || [];
+        state.todayNum = data.todayNum || 20261029;
 
-        document.getElementById("syncTime").innerText = data.updatedAt;
-
-        if (data.availableRounds && data.availableRounds.length > 0) {
-          const sel = document.getElementById("roundSelect");
-          const currentVal = sel.value;
-          sel.innerHTML =
-            '<option value="ALL">Tutte le Giornate</option>' +
-            data.availableRounds
-              .map(r => `<option value="${r.key}">${r.label}</option>`)
-              .join("");
-
-          if (currentVal && currentVal !== "ALL") {
-            sel.value = currentVal;
-          } else if (data.currentRoundKey) {
-            sel.value = data.currentRoundKey;
-          }
+        // Imposta la data selezionata nel calendario sulla prossima partita del CMB
+        if (!state.selectedDateStr && state.nextCmbMatch && state.nextCmbMatch.date.includes("/")) {
+          state.selectedDateStr = state.nextCmbMatch.date;
+          const [dd, mm, yyyy] = state.nextCmbMatch.date.split("/").map(Number);
+          state.monthYear = { year: yyyy, month: mm - 1 };
         }
+
+        document.getElementById("syncTime").innerText = (data.updatedAt || "").split(",")[1] || "OK";
+
+        // Popola i menu a tendina delle Giornate
+        if (data.availableRounds && data.availableRounds.length > 0) {
+          const rSel = document.getElementById("roundSelect");
+          rSel.innerHTML =
+            '<option value="ALL">Tutte le Giornate</option>' +
+            data.availableRounds.map(r => `<option value="${r.key}">${r.label}</option>`).join("");
+          if (data.currentRoundKey) rSel.value = data.currentRoundKey;
+        }
+
+        // Popola i menu a tendina delle 12 Squadre
+        const allTeams = state.standings.length > 0
+          ? state.standings.map(s => s.team)
+          : Array.from(new Set(state.matches.flatMap(m => [m.homeTeam, m.awayTeam])));
+
+        const tSel = document.getElementById("teamSelect");
+        tSel.innerHTML =
+          '<option value="ALL">Tutte le 12 Squadre</option>' +
+          allTeams.map(t => `<option value="${t}">${t}</option>`).join("");
+
+        const mTeamSel = document.getElementById("monthTeamSelect");
+        mTeamSel.innerHTML =
+          '<option value="CMB">C.M.B. RHO</option>' +
+          allTeams.filter(t => !isSameTeam(t, "C.M.B. RHO")).map(t => `<option value="${t}">${t}</option>`).join("");
 
         renderHome();
+        renderMonthlyCalendar();
+        renderLeagueMatches();
         renderStandings();
-        renderMatches();
+        startGlobalCountdown();
       } catch (e) {
         errBox.classList.remove("hidden");
-        errBox.innerHTML = `<strong class="text-[#CC2918]">Attenzione:</strong> ${e.message}`;
+        errBox.innerHTML = `<strong>Attenzione:</strong> ${e.message}`;
       } finally {
-        btn.innerText = "Aggiorna FIP";
+        icon.classList.remove("animate-spin");
       }
-    }
-
-    function startCountdown(match) {
-      if (state.countdownTimer) clearInterval(state.countdownTimer);
-      if (!match || !match.date.includes("/")) return;
-
-      const updateClock = () => {
-        const el = document.getElementById("countdownBox");
-        if (!el) return;
-
-        const [dd, mm, yyyy] = match.date.split("/").map(Number);
-        const [hh, min] = match.time.includes(":")
-          ? match.time.split(":").map(Number)
-          : [21, 0];
-
-        const target = new Date(yyyy, mm - 1, dd, hh, min, 0).getTime();
-        const diff = target - Date.now();
-
-        if (diff <= 0) {
-          el.innerHTML = `
-            <div class="bg-[#CC2918]/20 border border-[#CC2918] text-white font-black text-xs py-2.5 px-4 rounded-xl text-center uppercase tracking-wider">
-              🏀 Partita in corso o appena iniziata!
-            </div>`;
-          return;
-        }
-
-        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-        const m = Math.floor((diff / 1000 / 60) % 60);
-        const s = Math.floor((diff / 1000) % 60);
-
-        el.innerHTML = `
-          <div class="grid grid-cols-4 gap-2 text-center my-3">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl py-2">
-              <div class="text-lg font-black text-[#CC2918]">${String(d).padStart(2, "0")}</div>
-              <div class="text-[9px] text-gray-400 font-bold">GIORNI</div>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl py-2">
-              <div class="text-lg font-black text-[#CC2918]">${String(h).padStart(2, "0")}</div>
-              <div class="text-[9px] text-gray-400 font-bold">ORE</div>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl py-2">
-              <div class="text-lg font-black text-[#CC2918]">${String(m).padStart(2, "0")}</div>
-              <div class="text-[9px] text-gray-400 font-bold">MIN</div>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl py-2">
-              <div class="text-lg font-black text-[#CC2918]">${String(s).padStart(2, "0")}</div>
-              <div class="text-[9px] text-gray-400 font-bold">SEC</div>
-            </div>
-          </div>`;
-      };
-
-      updateClock();
-      state.countdownTimer = setInterval(updateClock, 1000);
-    }
-
-    function renderHome() {
-      const box = document.getElementById("homeContainer");
-      const m = state.nextCmbMatch;
-      const cmbStanding = state.standings.find(s => s.isCmb) || findStandingForTeam("C.M.B. RHO");
-
-      if (!m) {
-        box.className = "bg-[#0F0F11] text-white rounded-2xl p-6 text-center text-xs text-gray-400";
-        box.innerHTML = "Nessuna gara in programma trovata.";
-        return;
-      }
-
-      box.className = "space-y-4 text-left";
-      const isToday = m.dateNum === state.todayNum;
-      const homeRank = findStandingForTeam(m.homeTeam);
-      const awayRank = findStandingForTeam(m.awayTeam);
-      const opponentName = m.isCmbHome ? m.awayTeam : m.homeTeam;
-      const opponentRank = m.isCmbHome ? awayRank : homeRank;
-      const safeGymQuery = m.gym.replace(/'/g, "\\'");
-
-      box.innerHTML = `
-        <!-- CARD 1: PROSSIMA PARTITA -->
-        <div class="bg-[#0F0F11] text-white rounded-2xl p-5 shadow-lg border-2 ${isToday ? 'border-[#CC2918]' : 'border-zinc-800'}">
-          <div class="flex items-center justify-between gap-2 mb-3">
-            <span class="bg-[#CC2918] text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md tracking-wider">
-              ${isToday ? "🔥 STASERA IN CAMPO" : "PROSSIMA PARTITA"}
-            </span>
-            <span class="text-xs font-bold text-gray-300">${m.round}</span>
-          </div>
-
-          <!-- Squadre e Posizione in classifica -->
-          <div class="my-4 text-center space-y-2">
-            <div>
-              <div class="text-base font-black ${m.isCmbHome ? 'text-[#CC2918]' : 'text-white'}">${m.homeTeam}</div>
-              <div class="text-[11px] text-gray-400">
-                Squadra di casa ${homeRank ? `• <strong>${homeRank.position}° posto</strong> (${homeRank.points} PT)` : ""}
-              </div>
-            </div>
-
-            <div class="inline-block bg-zinc-900 border border-zinc-700 text-[#CC2918] font-black text-xs px-3 py-1 rounded-lg">
-              VS
-            </div>
-
-            <div>
-              <div class="text-base font-black ${!m.isCmbHome ? 'text-[#CC2918]' : 'text-white'}">${m.awayTeam}</div>
-              <div class="text-[11px] text-gray-400">
-                Squadra ospite ${awayRank ? `• <strong>${awayRank.position}° posto</strong> (${awayRank.points} PT)` : ""}
-              </div>
-            </div>
-          </div>
-
-          <!-- Countdown -->
-          <div id="countdownBox"></div>
-
-          <!-- Dettagli Partita (Data, Ora, Codice Gara, Arbitri) -->
-          <div class="space-y-2 text-xs text-gray-200 border-t border-zinc-800 pt-3 mt-3">
-            <div class="flex items-center justify-between">
-              <span class="text-gray-400">📅 Data e Ora:</span>
-              <strong class="text-white">${m.date} • Ore ${m.time}</strong>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-gray-400">🏀 Impegno C.M.B. RHO:</span>
-              <span class="font-bold ${m.isCmbHome ? 'text-green-400' : 'text-amber-400'}">
-                ${m.isCmbHome ? "In Casa (Molinello)" : "In Trasferta"}
-              </span>
-            </div>
-            ${m.matchCode ? `
-            <div class="flex items-center justify-between">
-              <span class="text-gray-400">#️⃣ Codice Gara FIP:</span>
-              <span class="font-mono text-gray-300">${m.matchCode}</span>
-            </div>` : ""}
-            <div class="pt-1 border-t border-zinc-900">
-              <span class="text-gray-400 block mb-0.5">🎽 Arbitri designati:</span>
-              <strong class="text-white">${m.referees.join(" • ")}</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 2: PALESTRA IN CUI SI GIOCA & GOOGLE MAPS -->
-        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 shadow-lg border border-zinc-800 space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-black uppercase tracking-wider text-[#CC2918]">📍 Palestra della Partita</span>
-            <span class="text-[11px] text-gray-400">${m.isCmbHome ? "Campo di Casa" : "Campo Ospitante"}</span>
-          </div>
-          <div class="text-xs text-gray-200 leading-relaxed font-semibold">
-            ${m.gym}
-          </div>
-          <button onclick="openMaps('${safeGymQuery}')" class="w-full bg-[#CC2918] active:scale-95 text-white font-black text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition">
-            <span>🧭 Naviga verso la Palestra con Google Maps</span>
-          </button>
-        </div>
-
-        <!-- CARD 3: POSIZIONE IN CLASSIFICA & CONFRONTO -->
-        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 shadow-lg border border-zinc-800 space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-black uppercase tracking-wider text-[#CC2918]">🏆 Situazione in Classifica</span>
-            <button onclick="switchTab('standings')" class="text-[11px] text-[#CC2918] font-bold underline">
-              Classifica completa →
-            </button>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2.5 text-center">
-            <div class="bg-zinc-900 border border-[#CC2918]/60 rounded-xl p-3">
-              <div class="text-[10px] text-gray-400 font-bold uppercase truncate">C.M.B. RHO</div>
-              <div class="text-2xl font-black text-[#CC2918] my-0.5">
-                ${cmbStanding ? `${cmbStanding.position}°` : "-"}
-              </div>
-              <div class="text-[11px] text-gray-300 font-bold">
-                ${cmbStanding ? `${cmbStanding.points} PT (${cmbStanding.won}V - ${cmbStanding.lost}P)` : "In attesa"}
-              </div>
-            </div>
-
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-              <div class="text-[10px] text-gray-400 font-bold uppercase truncate">${opponentName}</div>
-              <div class="text-2xl font-black text-white my-0.5">
-                ${opponentRank ? `${opponentRank.position}°` : "-"}
-              </div>
-              <div class="text-[11px] text-gray-300 font-bold">
-                ${opponentRank ? `${opponentRank.points} PT (${opponentRank.won}V - ${opponentRank.lost}P)` : "In attesa"}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CARD 4: ULTIMO RISULTATO C.M.B. RHO -->
-        ${state.lastCmbMatch ? `
-        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 shadow-lg border border-zinc-800">
-          <div class="flex items-center justify-between text-[11px] text-gray-400 mb-2">
-            <span class="font-black uppercase text-[#CC2918]">Ultimo Risultato C.M.B. RHO</span>
-            <span>${state.lastCmbMatch.round} (${state.lastCmbMatch.date})</span>
-          </div>
-          <div class="flex items-center justify-between gap-2">
-            <div class="text-xs font-bold flex-1">${state.lastCmbMatch.homeTeam}</div>
-            <div class="bg-zinc-900 px-3 py-1 rounded-lg font-black text-xs text-green-400">
-              ${state.lastCmbMatch.homeScore} - ${state.lastCmbMatch.awayScore}
-            </div>
-            <div class="text-xs font-bold flex-1 text-right">${state.lastCmbMatch.awayTeam}</div>
-          </div>
-        </div>` : ""}
-      `;
-
-      startCountdown(m);
-    }
-
-    function renderStandings() {
-      const box = document.getElementById("standingsContainer");
-      if (state.standings.length === 0) {
-        box.innerHTML = "Nessuna riga di classifica trovata nella pagina FIP.";
-        return;
-      }
-      box.innerHTML = `
-        <table class="w-full text-xs text-left">
-          <thead>
-            <tr class="border-b border-zinc-800 text-gray-400">
-              <th class="py-2">#</th>
-              <th class="py-2">Squadra</th>
-              <th class="py-2 text-center text-[#CC2918]">PT</th>
-              <th class="py-2 text-center">G</th>
-              <th class="py-2 text-center">V</th>
-              <th class="py-2 text-center">P</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${state.standings.map(r => `
-              <tr class="border-b border-zinc-900 ${r.isCmb ? 'bg-[#CC2918]/25 font-black text-white' : ''}">
-                <td class="py-2.5 text-gray-400">${r.position}</td>
-                <td class="py-2.5">${r.team}</td>
-                <td class="py-2.5 text-center font-black text-[#CC2918]">${r.points}</td>
-                <td class="py-2.5 text-center">${r.played}</td>
-                <td class="py-2.5 text-center text-green-400">${r.won}</td>
-                <td class="py-2.5 text-center text-red-400">${r.lost}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      `;
-    }
-
-    function toggleOnlyCmb() {
-      state.onlyCmb = !state.onlyCmb;
-      const btn = document.getElementById("filterCmbBtn");
-      btn.className = state.onlyCmb
-        ? "text-xs font-bold px-3 py-2 rounded-lg border border-[#CC2918] bg-[#CC2918] text-white shrink-0"
-        : "text-xs font-bold px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-gray-300 shrink-0";
-      renderMatches();
-    }
-
-    function renderMatches() {
-      const box = document.getElementById("matchesContainer");
-      const selectedRoundKey = document.getElementById("roundSelect").value;
-
-      const list = state.matches.filter(m => {
-        if (state.onlyCmb && !m.isCmb) return false;
-        if (selectedRoundKey && selectedRoundKey !== "ALL" && m.roundKey !== selectedRoundKey) return false;
-        return true;
-      });
-
-      if (list.length === 0) {
-        box.innerHTML = `<div class="bg-[#0F0F11] text-gray-400 text-xs p-6 rounded-2xl text-center">Nessuna partita trovata per questo filtro.</div>`;
-        return;
-      }
-
-      box.innerHTML = list.map(m => `
-        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 border ${m.isCmb ? 'border-[#CC2918]' : 'border-zinc-800'}">
-          <div class="flex justify-between text-[11px] text-gray-400 mb-2">
-            <span class="font-bold text-[#CC2918]">${m.round}</span>
-            <span>${m.date} • ${m.time}</span>
-          </div>
-          <div class="flex items-center justify-between gap-2 my-2">
-            <div class="text-xs font-bold flex-1">${m.homeTeam}</div>
-            <div class="bg-zinc-900 px-3 py-1 rounded-lg font-black text-xs text-[#CC2918]">
-              ${m.played ? `${m.homeScore} - ${m.awayScore}` : "VS"}
-            </div>
-            <div class="text-xs font-bold flex-1 text-right">${m.awayTeam}</div>
-          </div>
-          <div class="mt-3 pt-2 border-t border-zinc-800 text-[11px] text-gray-300 space-y-1">
-            <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(", ")}</div>
-            <div class="flex items-center justify-between pt-1">
-              <span class="text-gray-400 truncate pr-2">📍 ${m.gym}</span>
-              <button onclick="openMaps('${m.gym.replace(/'/g, "\\'")}')" class="text-[#CC2918] font-bold shrink-0">Maps ↗</button>
-            </div>
-          </div>
-        </div>
-      `).join("");
-    }
-
-    function renderGyms() {
-      const q = (document.getElementById("gymSearch").value || "").toLowerCase();
-      const box = document.getElementById("gymsContainer");
-      box.innerHTML = GYMS.filter(g => g.team.toLowerCase().includes(q) || g.address.toLowerCase().includes(q)).map(g => `
-        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 border border-zinc-800 flex items-center justify-between gap-3">
-          <div>
-            <div class="text-xs font-black text-[#CC2918]">${g.team}</div>
-            <div class="text-sm font-bold">${g.gym}</div>
-            <div class="text-xs text-gray-400">${g.address}</div>
-          </div>
-          <button onclick="openMaps('${g.query}')" class="bg-[#CC2918] text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shrink-0">
-            Maps ↗
-          </button>
-        </div>
-      `).join("");
     }
 
     renderGyms();
