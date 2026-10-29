@@ -36,21 +36,38 @@ const INFO_LABELS = [
   { key: "stop", regex: /^(Segnapunti|Cronometrista|24\s*secondi|Osservatore)$/i }
 ];
 
-// Cache in memoria di 2 minuti per velocizzare il caricamento
 let CACHE = { timestamp: 0, data: null };
 
 async function fetchHtml(url) {
-  const response = await fetch(url, { headers: HEADERS });
-  if (!response.ok) {
-    throw new Error(`FIP.it ha risposto con stato HTTP ${response.status}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
+  try {
+    const response = await fetch(url, {
+      headers: HEADERS,
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      throw new Error(`FIP.it HTTP ${response.status}`);
+    }
+    return await response.text();
+  } finally {
+    clearTimeout(timeout);
   }
-  return await response.text();
 }
 
 function isCmbTeam(name) {
   if (!name) return false;
   const u = name.toUpperCase();
-  return u.includes("RHO") && (u.includes("C.M.B") || u.includes("CMB") || u.includes("CENTRO MINI BASKET"));
+  return (
+    u.includes("RHO") &&
+    (u.includes("C.M.B") || u.includes("CMB") || u.includes("CENTRO MINI BASKET"))
+  );
+}
+
+function normalizeTeamKey(name) {
+  return (name || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
 }
 
 function parseStandings($) {
@@ -65,11 +82,14 @@ function parseStandings($) {
 
     if (cols.length >= 5) {
       const firstIsNum = /^\d+$/.test(cols[0]);
-      const team = firstIsNum ? cols[1] : cols[0];
-      const points = parseInt(firstIsNum ? cols[2] : cols[1], 10);
-      const played = parseInt(firstIsNum ? cols[3] : cols[2], 10) || 0;
-      const won = parseInt(firstIsNum ? cols[4] : cols[3], 10) || 0;
-      const lost = parseInt(firstIsNum ? cols[5] : cols[4], 10) || 0;
+      const idxOffset = firstIsNum ? 1 : 0;
+      const team = cols[idxOffset];
+      const points = parseInt(cols[idxOffset + 1], 10);
+      const played = parseInt(cols[idxOffset + 2], 10) || 0;
+      const won = parseInt(cols[idxOffset + 3], 10) || 0;
+      const lost = parseInt(cols[idxOffset + 4], 10) || 0;
+      const pfCol = parseInt(cols[idxOffset + 5], 10);
+      const psCol = parseInt(cols[idxOffset + 6], 10);
 
       if (
         team &&
@@ -86,6 +106,9 @@ function parseStandings($) {
           played,
           won,
           lost,
+          pf: !isNaN(pfCol) ? pfCol : 0,
+          ps: !isNaN(psCol) ? psCol : 0,
+          diff: !isNaN(pfCol) && !isNaN(psCol) ? pfCol - psCol : 0,
           isCmb: isCmbTeam(team)
         });
       }
@@ -157,7 +180,6 @@ function parseMatches(tokens, roundLabel, roundKey) {
 
       if (currentKey && info[currentKey]) {
         info[currentKey].push(tok);
-        // "Campo di gioco" e "Arbitri" generico hanno un solo blocco di testo
         if (currentKey === "refGeneric") break;
         if (currentKey === "gym" && info.gym.length >= 1) {
           currentKey = null;
@@ -165,7 +187,6 @@ function parseMatches(tokens, roundLabel, roundKey) {
       }
     }
 
-    // Scansione all'indietro prima di "Squadra di casa" per trovare Data, Ora, Codice Gara e Punteggi
     let dateStr = "Data da definire";
     let timeStr = "--:--";
     let matchCode = "";
@@ -255,10 +276,8 @@ function parseMatches(tokens, roundLabel, roundKey) {
   return matches;
 }
 
-function buildFullRoundsList($) {
-  const map = new Map();
-
-  // In FIP: codice_ar=1 è Andata, codice_ar=2 è Ritorno
+function buildRoundsList($) {
+  const rawRounds = [];
   $("a[href*='giornata='], option[value*='giornata=']").each((_, el) => {
     const href = $(el).attr("href") || $(el).attr("value") || "";
     const arMatch = href.match(/codice_ar=([^&]+)/);
@@ -266,36 +285,119 @@ function buildFullRoundsList($) {
     if (gMatch) {
       const ar = arMatch ? arMatch[1] : "1";
       const g = parseInt(gMatch[1], 10);
+      if (!rawRounds.some((r) => r.codice_ar === ar && r.giornata === g)) {
+        rawRounds.push({ codice_ar: ar, giornata: g });
+      }
+    }
+  });
+
+  // Rileva i codici usati da FIP per Andata e Ritorno (es. "0"/"1" oppure "1"/"2" oppure "A"/"R")
+  const distinctAr = Array.from(new Set(rawRounds.map((r) => r.codice_ar))).sort();
+  const firstAr = distinctAr[0] || "1";
+  const secondAr = distinctAr[1] || (firstAr === "0" ? "1" : "2");
+
+  const map = new Map();
+  for (const ar of [firstAr, secondAr]) {
+    const isRitorno = ar === secondAr && ar !== firstAr;
+    const fase = isRitorno ? "Ritorno" : "Andata";
+    const orderPrefix = isRitorno ? 2 : 1;
+    for (let g = 1; g <= 11; g++) {
       const key = `${ar}-${g}`;
-      const fase = ar === "2" || ar.toUpperCase() === "R" ? "Ritorno" : "Andata";
       map.set(key, {
         key,
         codice_ar: ar,
         giornata: g,
+        order: orderPrefix * 100 + g,
         label: `Giornata ${g} (${fase})`
       });
     }
-  });
-
-  // Garantisce che tutte le 11 giornate di Andata (ar=1) e 11 di Ritorno (ar=2) siano presenti
-  for (const ar of ["1", "2"]) {
-    const fase = ar === "2" ? "Ritorno" : "Andata";
-    for (let g = 1; g <= 11; g++) {
-      const key = `${ar}-${g}`;
-      if (!map.has(key)) {
-        map.set(key, {
-          key,
-          codice_ar: ar,
-          giornata: g,
-          label: `Giornata ${g} (${fase})`
-        });
-      }
-    }
   }
 
-  return Array.from(map.values()).sort((a, b) => {
-    if (a.codice_ar !== b.codice_ar) return a.codice_ar.localeCompare(b.codice_ar);
-    return a.giornata - b.giornata;
+  return Array.from(map.values()).sort((a, b) => a.order - b.order);
+}
+
+function enrichStandingsWithMatches(standings, allMatches) {
+  const statsByTeam = {};
+
+  const ensureTeam = (name) => {
+    const k = normalizeTeamKey(name);
+    if (!statsByTeam[k]) {
+      statsByTeam[k] = {
+        pf: 0,
+        ps: 0,
+        homeWon: 0,
+        homeLost: 0,
+        awayWon: 0,
+        awayLost: 0,
+        form: []
+      };
+    }
+    return statsByTeam[k];
+  };
+
+  const playedSorted = allMatches
+    .filter((m) => m.played && m.homeScore !== null && m.awayScore !== null)
+    .sort((a, b) => a.dateNum - b.dateNum);
+
+  for (const m of playedSorted) {
+    const hStat = ensureTeam(m.homeTeam);
+    const aStat = ensureTeam(m.awayTeam);
+
+    hStat.pf += m.homeScore;
+    hStat.ps += m.awayScore;
+    aStat.pf += m.awayScore;
+    aStat.ps += m.homeScore;
+
+    const homeWin = m.homeScore > m.awayScore;
+    if (homeWin) {
+      hStat.homeWon++;
+      aStat.awayLost++;
+    } else {
+      hStat.homeLost++;
+      aStat.awayWon++;
+    }
+
+    hStat.form.push({
+      result: homeWin ? "W" : "L",
+      score: `${m.homeScore}-${m.awayScore}`,
+      opponent: m.awayTeam,
+      date: m.date,
+      isHome: true
+    });
+
+    aStat.form.push({
+      result: !homeWin ? "W" : "L",
+      score: `${m.awayScore}-${m.homeScore}`,
+      opponent: m.homeTeam,
+      date: m.date,
+      isHome: false
+    });
+  }
+
+  return standings.map((row) => {
+    const k = normalizeTeamKey(row.team);
+    const calc = statsByTeam[k] || {
+      pf: 0,
+      ps: 0,
+      homeWon: 0,
+      homeLost: 0,
+      awayWon: 0,
+      awayLost: 0,
+      form: []
+    };
+
+    const pf = row.pf > 0 ? row.pf : calc.pf;
+    const ps = row.ps > 0 ? row.ps : calc.ps;
+
+    return {
+      ...row,
+      pf,
+      ps,
+      diff: pf - ps,
+      homeRecord: `${calc.homeWon}-${calc.homeLost}`,
+      awayRecord: `${calc.awayWon}-${calc.awayLost}`,
+      last5: calc.form.slice(-5)
+    };
   });
 }
 
@@ -323,19 +425,18 @@ module.exports = async (req, res) => {
     const forceRefresh = req.query.force === "1";
     const now = Date.now();
 
-    if (!forceRefresh && CACHE.data && now - CACHE.timestamp < 120 * 1000) {
+    if (!forceRefresh && CACHE.data && now - CACHE.timestamp < 180 * 1000) {
       return res.status(200).json(CACHE.data);
     }
 
     const initialHtml = await fetchHtml(BASE_FIP_URL);
     const $initial = cheerio.load(initialHtml);
-    const standings = parseStandings($initial);
-    const availableRounds = buildFullRoundsList($initial);
+    const rawStandings = parseStandings($initial);
+    const availableRounds = buildRoundsList($initial);
 
-    // Scarica tutte le giornate in parallelo a blocchi per trovare l'intero calendario
     const allMatches = [];
     const seenKeys = new Set();
-    const batchSize = 8;
+    const batchSize = 11;
 
     for (let i = 0; i < availableRounds.length; i += batchSize) {
       const batch = availableRounds.slice(i, i + batchSize);
@@ -352,7 +453,7 @@ module.exports = async (req, res) => {
       for (const resItem of results) {
         if (resItem.status === "fulfilled" && Array.isArray(resItem.value)) {
           for (const m of resItem.value) {
-            const uniqueId = `${m.roundKey}-${m.homeTeam}-${m.awayTeam}`;
+            const uniqueId = `${m.homeTeam}-${m.awayTeam}-${m.date}`;
             if (!seenKeys.has(uniqueId)) {
               seenKeys.add(uniqueId);
               allMatches.push(m);
@@ -362,13 +463,23 @@ module.exports = async (req, res) => {
       }
     }
 
-    const todayNum = getTodayRomeNum();
-    const cmbMatches = allMatches.filter((m) => m.isCmb);
+    // Corregge l'etichetta Andata/Ritorno in base alla data reale (2026 = Andata)
+    allMatches.forEach((m) => {
+      if (m.dateNum < 20270110 && m.round.includes("Ritorno")) {
+        m.round = m.round.replace("Ritorno", "Andata");
+      }
+    });
 
-    // Trova automaticamente la PROSSIMA partita (o la partita di OGGI/STASERA)
-    const upcomingCmb = cmbMatches
-      .filter((m) => !m.played && m.dateNum >= todayNum)
+    const standings = enrichStandingsWithMatches(rawStandings, allMatches);
+    const todayNum = getTodayRomeNum();
+
+    const cmbMatches = allMatches
+      .filter((m) => m.isCmb)
       .sort((a, b) => a.dateNum - b.dateNum);
+
+    const upcomingCmb = cmbMatches.filter(
+      (m) => !m.played && m.dateNum >= todayNum
+    );
 
     const nextCmbMatch =
       upcomingCmb[0] ||
@@ -376,15 +487,9 @@ module.exports = async (req, res) => {
       cmbMatches[cmbMatches.length - 1] ||
       null;
 
-    // Trova l'ultima partita già giocata dal C.M.B. RHO
-    const playedCmb = cmbMatches
-      .filter((m) => m.played)
-      .sort((a, b) => b.dateNum - a.dateNum);
-    const lastCmbMatch = playedCmb[0] || null;
-
     const currentRoundKey = nextCmbMatch
       ? nextCmbMatch.roundKey
-      : availableRounds[0]?.key || "1-1";
+      : availableRounds[0]?.key || "";
 
     const payload = {
       ok: true,
@@ -394,7 +499,7 @@ module.exports = async (req, res) => {
       todayNum,
       currentRoundKey,
       nextCmbMatch,
-      lastCmbMatch,
+      upcomingCmbMatches: upcomingCmb.slice(0, 6),
       availableRounds,
       standings,
       matches: allMatches
