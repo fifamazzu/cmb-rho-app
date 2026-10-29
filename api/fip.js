@@ -40,7 +40,7 @@ let CACHE = { timestamp: 0, data: null };
 
 async function fetchHtml(url) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 7500);
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
     const response = await fetch(url, {
       headers: HEADERS,
@@ -276,24 +276,82 @@ function parseMatches(tokens, roundLabel, roundKey) {
   return matches;
 }
 
-function buildRoundsList() {
-  // Sul portale FIP: codice_ar=1 è SEMPRE Andata, codice_ar=2 è SEMPRE Ritorno
+function detectArCodes($) {
+  let andataCode = "1";
+  let ritornoCode = "R";
+
+  // Ispeziona link e opzioni della pagina FIP per rilevare la codifica esatta
+  $("a, option").each((_, el) => {
+    const text = $(el).text().toLowerCase();
+    const href = $(el).attr("href") || $(el).attr("value") || "";
+    const m = href.match(/codice_ar=([^&]+)/i);
+    if (m) {
+      const code = m[1].trim();
+      if (/ritorno/i.test(text)) {
+        ritornoCode = code;
+      } else if (/andata/i.test(text)) {
+        andataCode = code;
+      }
+    }
+  });
+
+  return { andataCode, ritornoCode };
+}
+
+function buildRoundsList($) {
+  const { andataCode, ritornoCode } = detectArCodes($);
   const rounds = [];
-  for (const ar of ["1", "2"]) {
-    const isRitorno = ar === "2";
-    const fase = isRitorno ? "Ritorno" : "Andata";
-    const orderPrefix = isRitorno ? 2 : 1;
-    for (let g = 1; g <= 11; g++) {
-      rounds.push({
-        key: `${ar}-${g}`,
-        codice_ar: ar,
-        giornata: g,
-        order: orderPrefix * 100 + g,
-        label: `Giornata ${g} (${fase})`
-      });
+
+  // 11 Giornate di Andata
+  for (let g = 1; g <= 11; g++) {
+    rounds.push({
+      key: `A-${g}`,
+      codice_ar: andataCode || "1",
+      giornata: g,
+      order: 100 + g,
+      label: `Giornata ${g} (Andata)`
+    });
+  }
+
+  // 11 Giornate di Ritorno (codice federale 'R')
+  for (let g = 1; g <= 11; g++) {
+    rounds.push({
+      key: `R-${g}`,
+      codice_ar: ritornoCode || "R",
+      giornata: g,
+      order: 200 + g,
+      label: `Giornata ${g} (Ritorno)`
+    });
+  }
+
+  return rounds;
+}
+
+async function fetchRoundMatches(r) {
+  let url = `${BASE_FIP_URL}&codice_ar=${r.codice_ar}&giornata=${r.giornata}`;
+  let html = await fetchHtml(url);
+  let $ = cheerio.load(html);
+  let tokens = getTokens($);
+  let matches = parseMatches(tokens, r.label, r.key);
+
+  // Fallback automatico se FIP risponde vuoto sul codice Ritorno
+  if (matches.length === 0 && r.key.startsWith("R-")) {
+    const fallbacks = ["R", "r", "2"].filter((c) => c !== r.codice_ar);
+    for (const alt of fallbacks) {
+      try {
+        const altUrl = `${BASE_FIP_URL}&codice_ar=${alt}&giornata=${r.giornata}`;
+        const altHtml = await fetchHtml(altUrl);
+        const alt$ = cheerio.load(altHtml);
+        const altTokens = getTokens(alt$);
+        const altMatches = parseMatches(altTokens, r.label, r.key);
+        if (altMatches.length > 0) {
+          return altMatches;
+        }
+      } catch (_) {}
     }
   }
-  return rounds;
+
+  return matches;
 }
 
 function enrichStandingsWithMatches(standings, allMatches) {
@@ -422,7 +480,7 @@ module.exports = async (req, res) => {
     const initialHtml = await fetchHtml(BASE_FIP_URL);
     const $initial = cheerio.load(initialHtml);
     const rawStandings = parseStandings($initial);
-    const availableRounds = buildRoundsList();
+    const availableRounds = buildRoundsList($initial);
 
     const allMatches = [];
     const seenKeys = new Set();
@@ -431,13 +489,7 @@ module.exports = async (req, res) => {
     for (let i = 0; i < availableRounds.length; i += batchSize) {
       const batch = availableRounds.slice(i, i + batchSize);
       const results = await Promise.allSettled(
-        batch.map(async (r) => {
-          const url = `${BASE_FIP_URL}&codice_ar=${r.codice_ar}&giornata=${r.giornata}`;
-          const html = await fetchHtml(url);
-          const $ = cheerio.load(html);
-          const tokens = getTokens($);
-          return parseMatches(tokens, r.label, r.key);
-        })
+        batch.map((r) => fetchRoundMatches(r))
       );
 
       for (const resItem of results) {
@@ -472,7 +524,7 @@ module.exports = async (req, res) => {
 
     const currentRoundKey = nextCmbMatch
       ? nextCmbMatch.roundKey
-      : availableRounds[0]?.key || "1-1";
+      : availableRounds[0]?.key || "A-1";
 
     const payload = {
       ok: true,
@@ -497,4 +549,3 @@ module.exports = async (req, res) => {
     });
   }
 };
-// FINE FILE COMPLETO
