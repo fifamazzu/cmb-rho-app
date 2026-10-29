@@ -27,37 +27,31 @@
           <p class="text-[11px] text-gray-400 mt-0.5">DR4 Lombardia • Girone K (85812)</p>
         </div>
       </div>
-      <button id="syncBtn" onclick="loadFipData()" class="bg-[#CC2918] active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+      <button id="syncBtn" onclick="loadFipData(true)" class="bg-[#CC2918] active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
         Aggiorna FIP
       </button>
     </div>
   </header>
 
-  <!-- CONTENUTO -->
+  <!-- CONTENUTO PRINCIPALE -->
   <main class="max-w-md mx-auto px-4 pt-4 space-y-4">
-    <!-- Barra Stato -->
+    <!-- Barra Stato Sync -->
     <div class="bg-[#0F0F11] text-white text-xs px-3.5 py-2.5 rounded-xl flex items-center justify-between">
-      <span>Sync FIP: <strong id="syncTime">Caricamento...</strong></span>
+      <span>Sync FIP: <strong id="syncTime">Sincronizzazione...</strong></span>
       <a href="https://fip.it/risultati/?group=campionati-regionali&regione_codice=LO&comitato_codice=PVA&sesso=M&codice_campionato=2DM&codice_fase=1&codice_girone=85812" target="_blank" class="text-[#CC2918] font-bold underline">Sito Ufficiale FIP ↗</a>
     </div>
 
     <!-- Box Messaggi / Errori -->
     <div id="errorBox" class="hidden bg-[#0F0F11] border-l-4 border-[#CC2918] text-white p-4 rounded-xl text-xs space-y-1"></div>
 
-    <!-- SEZIONE 1: PROSSIMA PARTITA -->
-    <section id="tab-next" class="space-y-4">
-      <div class="bg-[#0F0F11] text-white rounded-2xl p-5 shadow-lg border border-zinc-800">
-        <div class="flex items-center justify-between mb-3">
-          <span class="bg-[#CC2918] text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md">Prossima Gara C.M.B. RHO</span>
-          <span class="text-xs text-gray-400">Girone K</span>
-        </div>
-        <div id="nextMatchContent" class="py-6 text-center text-xs text-gray-400">
-          Lettura calendario ufficiale FIP in corso...
-        </div>
+    <!-- TAB 1: HOME (Prossima Partita + Campo Maps + Classifica Rapida + Ultimo Risultato) -->
+    <section id="tab-home" class="space-y-4">
+      <div id="homeContainer" class="bg-[#0F0F11] text-white rounded-2xl p-6 text-center text-xs text-gray-400">
+        Ricerca automatica della prossima partita del C.M.B. RHO su FIP.it...
       </div>
     </section>
 
-    <!-- SEZIONE 2: CLASSIFICA -->
+    <!-- TAB 2: CLASSIFICA -->
     <section id="tab-standings" class="hidden">
       <div class="bg-[#0F0F11] text-white rounded-2xl p-4 shadow-lg border border-zinc-800">
         <h2 class="text-xs font-black uppercase tracking-wider text-[#CC2918] mb-3">Classifica Ufficiale FIP — Girone K</h2>
@@ -65,11 +59,11 @@
       </div>
     </section>
 
-    <!-- SEZIONE 3: CALENDARIO E ARBITRI -->
+    <!-- TAB 3: CALENDARIO E ARBITRI -->
     <section id="tab-calendar" class="hidden space-y-3">
       <div class="bg-[#0F0F11] text-white p-3 rounded-2xl flex items-center justify-between gap-2">
-        <select id="roundSelect" onchange="onRoundChange()" class="bg-zinc-900 text-white text-xs rounded-lg px-3 py-2 border border-zinc-700 w-full">
-          <option value="">Giornata Corrente FIP</option>
+        <select id="roundSelect" onchange="renderMatches()" class="bg-zinc-900 text-white text-xs rounded-lg px-3 py-2 border border-zinc-700 w-full">
+          <option value="ALL">Tutte le Giornate</option>
         </select>
         <button id="filterCmbBtn" onclick="toggleOnlyCmb()" class="text-xs font-bold px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-gray-300 shrink-0">
           Solo CMB
@@ -78,7 +72,7 @@
       <div id="matchesContainer" class="space-y-3"></div>
     </section>
 
-    <!-- SEZIONE 4: PALESTRE -->
+    <!-- TAB 4: PALESTRE -->
     <section id="tab-gyms" class="hidden space-y-3">
       <div class="bg-[#0F0F11] p-3 rounded-2xl">
         <input id="gymSearch" type="text" oninput="renderGyms()" placeholder="Cerca squadra o palestra del Girone K..." class="bg-transparent text-white text-xs w-full focus:outline-none" />
@@ -90,7 +84,7 @@
   <!-- BARRA DI NAVIGAZIONE IN BASSO -->
   <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#0F0F11] border-t border-zinc-800 px-2 py-2">
     <div class="max-w-md mx-auto grid grid-cols-4 gap-1 text-center">
-      <button onclick="switchTab('next')" id="nav-next" class="py-2 rounded-xl text-xs font-black text-[#CC2918]">Prossima</button>
+      <button onclick="switchTab('home')" id="nav-home" class="py-2 rounded-xl text-xs font-black text-[#CC2918]">Home</button>
       <button onclick="switchTab('standings')" id="nav-standings" class="py-2 rounded-xl text-xs font-bold text-gray-400">Classifica</button>
       <button onclick="switchTab('calendar')" id="nav-calendar" class="py-2 rounded-xl text-xs font-bold text-gray-400">Calendario</button>
       <button onclick="switchTab('gyms')" id="nav-gyms" class="py-2 rounded-xl text-xs font-bold text-gray-400">Palestre</button>
@@ -99,24 +93,32 @@
 
   <script>
     const GYMS = [
-      { team: "C.M.B. RHO", gym: "Molinello Play Village", address: "Via Trecate 46, Rho (MI)", query: "Molinello Play Village Via Trecate 46 Rho" },
+      { team: "C.M.B. RHO", gym: "Centro Sportivo Molinello", address: "Via Trecate 46, 20017 Rho (MI)", query: "Centro Sportivo Molinello Via Trecate Rho" },
       { team: "SAN PAOLO RHO", gym: "Palestra San Paolo Rho", address: "Rho (MI)", query: "San Paolo Basket Rho Palestra" },
       { team: "VICTOR BASKET RHO", gym: "Palestra Victor Basket Rho", address: "Rho (MI)", query: "Victor Basket Rho Palestra" },
-      { team: "UPN NERVIANO", gym: "Palestra Comunale Nerviano", address: "Nerviano (MI)", query: "Pallacanestro Nerviano Palestra" },
+      { team: "UPN NERVIANO", gym: "Palestra Scuole Elementari", address: "Via Roma / Via L. da Vinci, 20014 Nerviano (MI)", query: "Via Leonardo da Vinci Nerviano Palestra" },
       { team: "BASKET PARABIAGO", gym: "Palazzetto dello Sport Parabiago", address: "Via Carso, Parabiago (MI)", query: "Palazzetto dello Sport Via Carso Parabiago" },
-      { team: "CAPIT PERFORMANCE YELLOW MAGIC", gym: "Campo Capit Performance", address: "Lombardia", query: "Capit Performance Yellow Magic Basket" },
+      { team: "CAPIT PERFORMANCE YELLOW MAGIC", gym: "Palestra Scolastica Arese", address: "Via Resegone 8, 20020 Arese (MI)", query: "Palestra Scolastica Via Resegone 8 Arese" },
       { team: "PALL. CERRO MAGGIORE", gym: "Palestra Comunale Cerro Maggiore", address: "Via Boccaccio, Cerro Maggiore (MI)", query: "Pallacanestro Cerro Maggiore Via Boccaccio" },
-      { team: "SG.SPORT ARESE", gym: "Centro Sportivo Davide Ancilotto", address: "Viale Resegone, Arese (MI)", query: "SG Sport Arese Basket" },
-      { team: "ARLUNESE GIALLO", gym: "Palestra Comunale Arluno", address: "Arluno (MI)", query: "Polisportiva Arlunese Basket Arluno" },
-      { team: "ARLUNESE BLU", gym: "Palestra Comunale Arluno", address: "Arluno (MI)", query: "Polisportiva Arlunese Basket Arluno" },
+      { team: "SG.SPORT ARESE", gym: "PalaCICI (C.S. Davide Ancilotto)", address: "Piazza dello Sport 6, 20020 Arese (MI)", query: "Centro Sportivo Davide Ancilotto Piazza dello Sport 6 Arese" },
+      { team: "BASKET CLUB ARLUNESE GIALLO", gym: "Palestra Comunale Arluno", address: "Via Damiano Chiesa, 20010 Arluno (MI)", query: "Palestra Comunale Via Damiano Chiesa Arluno" },
+      { team: "BASKET CLUB ARLUNESE BLU", gym: "Palestra Comunale Arluno", address: "Via Damiano Chiesa, 20010 Arluno (MI)", query: "Palestra Comunale Via Damiano Chiesa Arluno" },
       { team: "SANGIORGESE BASKET", gym: "PalaBertelli", address: "Via del Campaccio, San Giorgio su Legnano (MI)", query: "PalaBertelli San Giorgio su Legnano" },
-      { team: "S.LUIGI GARBAGNATE", gym: "Palestra OSL Garbagnate", address: "Garbagnate Milanese (MI)", query: "OSL Garbagnate Basket Palestra" }
+      { team: "S.LUIGI BASKET GARBAGNATE", gym: "Palestra OSL Garbagnate", address: "Garbagnate Milanese (MI)", query: "OSL Garbagnate Basket Palestra" }
     ];
 
-    let state = { standings: [], matches: [], onlyCmb: false };
+    let state = {
+      standings: [],
+      matches: [],
+      nextCmbMatch: null,
+      lastCmbMatch: null,
+      todayNum: 0,
+      onlyCmb: false,
+      countdownTimer: null
+    };
 
     function switchTab(tab) {
-      ["next", "standings", "calendar", "gyms"].forEach(t => {
+      ["home", "standings", "calendar", "gyms"].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
         const btn = document.getElementById(`nav-${t}`);
         btn.className = t === tab
@@ -129,28 +131,51 @@
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank");
     }
 
-    async function loadFipData(queryParams = "") {
+    function findStandingForTeam(teamName) {
+      if (!teamName || !state.standings.length) return null;
+      const u = teamName.toUpperCase().trim();
+      return state.standings.find(s => {
+        const su = s.team.toUpperCase().trim();
+        return su === u || su.includes(u) || u.includes(su);
+      }) || null;
+    }
+
+    async function loadFipData(force = false) {
       const btn = document.getElementById("syncBtn");
       const errBox = document.getElementById("errorBox");
       btn.innerText = "Sync...";
       errBox.classList.add("hidden");
 
       try {
-        const res = await fetch(`/api/fip${queryParams}`);
+        const res = await fetch(`/api/fip${force ? "?force=1" : ""}`);
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || "Errore lettura FIP");
 
         state.standings = data.standings || [];
         state.matches = data.matches || [];
+        state.nextCmbMatch = data.nextCmbMatch || null;
+        state.lastCmbMatch = data.lastCmbMatch || null;
+        state.todayNum = data.todayNum || 0;
+
         document.getElementById("syncTime").innerText = data.updatedAt;
 
-        if (data.availableRounds && data.availableRounds.length > 0 && !queryParams) {
+        if (data.availableRounds && data.availableRounds.length > 0) {
           const sel = document.getElementById("roundSelect");
-          sel.innerHTML = '<option value="">Giornata Corrente FIP</option>' +
-            data.availableRounds.map(r => `<option value="?codice_ar=${r.codice_ar}&giornata=${r.giornata}">${r.label}</option>`).join("");
+          const currentVal = sel.value;
+          sel.innerHTML =
+            '<option value="ALL">Tutte le Giornate</option>' +
+            data.availableRounds
+              .map(r => `<option value="${r.key}">${r.label}</option>`)
+              .join("");
+
+          if (currentVal && currentVal !== "ALL") {
+            sel.value = currentVal;
+          } else if (data.currentRoundKey) {
+            sel.value = data.currentRoundKey;
+          }
         }
 
-        renderNextMatch();
+        renderHome();
         renderStandings();
         renderMatches();
       } catch (e) {
@@ -161,43 +186,201 @@
       }
     }
 
-    function onRoundChange() {
-      const val = document.getElementById("roundSelect").value;
-      loadFipData(val);
+    function startCountdown(match) {
+      if (state.countdownTimer) clearInterval(state.countdownTimer);
+      if (!match || !match.date.includes("/")) return;
+
+      const updateClock = () => {
+        const el = document.getElementById("countdownBox");
+        if (!el) return;
+
+        const [dd, mm, yyyy] = match.date.split("/").map(Number);
+        const [hh, min] = match.time.includes(":")
+          ? match.time.split(":").map(Number)
+          : [21, 0];
+
+        const target = new Date(yyyy, mm - 1, dd, hh, min, 0).getTime();
+        const diff = target - Date.now();
+
+        if (diff <= 0) {
+          el.innerHTML = `
+            <div class="bg-[#CC2918]/20 border border-[#CC2918] text-white font-black text-xs py-2.5 px-4 rounded-xl text-center uppercase tracking-wider">
+              🏀 Partita in corso o appena iniziata!
+            </div>`;
+          return;
+        }
+
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const m = Math.floor((diff / 1000 / 60) % 60);
+        const s = Math.floor((diff / 1000) % 60);
+
+        el.innerHTML = `
+          <div class="grid grid-cols-4 gap-2 text-center my-3">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl py-2">
+              <div class="text-lg font-black text-[#CC2918]">${String(d).padStart(2, "0")}</div>
+              <div class="text-[9px] text-gray-400 font-bold">GIORNI</div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl py-2">
+              <div class="text-lg font-black text-[#CC2918]">${String(h).padStart(2, "0")}</div>
+              <div class="text-[9px] text-gray-400 font-bold">ORE</div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl py-2">
+              <div class="text-lg font-black text-[#CC2918]">${String(m).padStart(2, "0")}</div>
+              <div class="text-[9px] text-gray-400 font-bold">MIN</div>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl py-2">
+              <div class="text-lg font-black text-[#CC2918]">${String(s).padStart(2, "0")}</div>
+              <div class="text-[9px] text-gray-400 font-bold">SEC</div>
+            </div>
+          </div>`;
+      };
+
+      updateClock();
+      state.countdownTimer = setInterval(updateClock, 1000);
     }
 
-    function toggleOnlyCmb() {
-      state.onlyCmb = !state.onlyCmb;
-      const btn = document.getElementById("filterCmbBtn");
-      btn.className = state.onlyCmb
-        ? "text-xs font-bold px-3 py-2 rounded-lg border border-[#CC2918] bg-[#CC2918] text-white shrink-0"
-        : "text-xs font-bold px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-gray-300 shrink-0";
-      renderMatches();
-    }
+    function renderHome() {
+      const box = document.getElementById("homeContainer");
+      const m = state.nextCmbMatch;
+      const cmbStanding = state.standings.find(s => s.isCmb) || findStandingForTeam("C.M.B. RHO");
 
-    function renderNextMatch() {
-      const box = document.getElementById("nextMatchContent");
-      const cmbMatch = state.matches.find(m => m.isCmb && !m.played) || state.matches.find(m => m.isCmb);
-      if (!cmbMatch) {
-        box.innerHTML = `<p class="text-gray-300">Nessuna gara del C.M.B. RHO trovata nella giornata selezionata. Usa il tab Calendario per cambiare giornata.</p>`;
+      if (!m) {
+        box.className = "bg-[#0F0F11] text-white rounded-2xl p-6 text-center text-xs text-gray-400";
+        box.innerHTML = "Nessuna gara in programma trovata.";
         return;
       }
 
+      box.className = "space-y-4 text-left";
+      const isToday = m.dateNum === state.todayNum;
+      const homeRank = findStandingForTeam(m.homeTeam);
+      const awayRank = findStandingForTeam(m.awayTeam);
+      const opponentName = m.isCmbHome ? m.awayTeam : m.homeTeam;
+      const opponentRank = m.isCmbHome ? awayRank : homeRank;
+      const safeGymQuery = m.gym.replace(/'/g, "\\'");
+
       box.innerHTML = `
-        <div class="my-4 space-y-2">
-          <div class="text-lg font-black text-white">${cmbMatch.homeTeam}</div>
-          <div class="text-xs font-black text-[#CC2918]">${cmbMatch.played ? `${cmbMatch.homeScore} - ${cmbMatch.awayScore}` : "VS"}</div>
-          <div class="text-lg font-black text-white">${cmbMatch.awayTeam}</div>
+        <!-- CARD 1: PROSSIMA PARTITA -->
+        <div class="bg-[#0F0F11] text-white rounded-2xl p-5 shadow-lg border-2 ${isToday ? 'border-[#CC2918]' : 'border-zinc-800'}">
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <span class="bg-[#CC2918] text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md tracking-wider">
+              ${isToday ? "🔥 STASERA IN CAMPO" : "PROSSIMA PARTITA"}
+            </span>
+            <span class="text-xs font-bold text-gray-300">${m.round}</span>
+          </div>
+
+          <!-- Squadre e Posizione in classifica -->
+          <div class="my-4 text-center space-y-2">
+            <div>
+              <div class="text-base font-black ${m.isCmbHome ? 'text-[#CC2918]' : 'text-white'}">${m.homeTeam}</div>
+              <div class="text-[11px] text-gray-400">
+                Squadra di casa ${homeRank ? `• <strong>${homeRank.position}° posto</strong> (${homeRank.points} PT)` : ""}
+              </div>
+            </div>
+
+            <div class="inline-block bg-zinc-900 border border-zinc-700 text-[#CC2918] font-black text-xs px-3 py-1 rounded-lg">
+              VS
+            </div>
+
+            <div>
+              <div class="text-base font-black ${!m.isCmbHome ? 'text-[#CC2918]' : 'text-white'}">${m.awayTeam}</div>
+              <div class="text-[11px] text-gray-400">
+                Squadra ospite ${awayRank ? `• <strong>${awayRank.position}° posto</strong> (${awayRank.points} PT)` : ""}
+              </div>
+            </div>
+          </div>
+
+          <!-- Countdown -->
+          <div id="countdownBox"></div>
+
+          <!-- Dettagli Partita (Data, Ora, Codice Gara, Arbitri) -->
+          <div class="space-y-2 text-xs text-gray-200 border-t border-zinc-800 pt-3 mt-3">
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400">📅 Data e Ora:</span>
+              <strong class="text-white">${m.date} • Ore ${m.time}</strong>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400">🏀 Impegno C.M.B. RHO:</span>
+              <span class="font-bold ${m.isCmbHome ? 'text-green-400' : 'text-amber-400'}">
+                ${m.isCmbHome ? "In Casa (Molinello)" : "In Trasferta"}
+              </span>
+            </div>
+            ${m.matchCode ? `
+            <div class="flex items-center justify-between">
+              <span class="text-gray-400">#️⃣ Codice Gara FIP:</span>
+              <span class="font-mono text-gray-300">${m.matchCode}</span>
+            </div>` : ""}
+            <div class="pt-1 border-t border-zinc-900">
+              <span class="text-gray-400 block mb-0.5">🎽 Arbitri designati:</span>
+              <strong class="text-white">${m.referees.join(" • ")}</strong>
+            </div>
+          </div>
         </div>
-        <div class="text-xs text-gray-300 space-y-1 border-t border-zinc-800 pt-3 mt-3 text-left">
-          <div>📅 <strong>Data e Ora:</strong> ${cmbMatch.date} • ${cmbMatch.time}</div>
-          <div>📍 <strong>Campo:</strong> ${cmbMatch.gym}</div>
-          <div>🎽 <strong>Arbitri:</strong> ${cmbMatch.referees.join(", ")}</div>
+
+        <!-- CARD 2: PALESTRA IN CUI SI GIOCA & GOOGLE MAPS -->
+        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 shadow-lg border border-zinc-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-[#CC2918]">📍 Palestra della Partita</span>
+            <span class="text-[11px] text-gray-400">${m.isCmbHome ? "Campo di Casa" : "Campo Ospitante"}</span>
+          </div>
+          <div class="text-xs text-gray-200 leading-relaxed font-semibold">
+            ${m.gym}
+          </div>
+          <button onclick="openMaps('${safeGymQuery}')" class="w-full bg-[#CC2918] active:scale-95 text-white font-black text-xs py-3 rounded-xl flex items-center justify-center gap-2 transition">
+            <span>🧭 Naviga verso la Palestra con Google Maps</span>
+          </button>
         </div>
-        <button onclick="openMaps('${cmbMatch.gym.replace(/'/g, "\\'")}')" class="mt-4 w-full bg-[#CC2918] text-white font-black text-xs py-3 rounded-xl">
-          Naviga con Google Maps
-        </button>
+
+        <!-- CARD 3: POSIZIONE IN CLASSIFICA & CONFRONTO -->
+        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 shadow-lg border border-zinc-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-[#CC2918]">🏆 Situazione in Classifica</span>
+            <button onclick="switchTab('standings')" class="text-[11px] text-[#CC2918] font-bold underline">
+              Classifica completa →
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5 text-center">
+            <div class="bg-zinc-900 border border-[#CC2918]/60 rounded-xl p-3">
+              <div class="text-[10px] text-gray-400 font-bold uppercase truncate">C.M.B. RHO</div>
+              <div class="text-2xl font-black text-[#CC2918] my-0.5">
+                ${cmbStanding ? `${cmbStanding.position}°` : "-"}
+              </div>
+              <div class="text-[11px] text-gray-300 font-bold">
+                ${cmbStanding ? `${cmbStanding.points} PT (${cmbStanding.won}V - ${cmbStanding.lost}P)` : "In attesa"}
+              </div>
+            </div>
+
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+              <div class="text-[10px] text-gray-400 font-bold uppercase truncate">${opponentName}</div>
+              <div class="text-2xl font-black text-white my-0.5">
+                ${opponentRank ? `${opponentRank.position}°` : "-"}
+              </div>
+              <div class="text-[11px] text-gray-300 font-bold">
+                ${opponentRank ? `${opponentRank.points} PT (${opponentRank.won}V - ${opponentRank.lost}P)` : "In attesa"}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 4: ULTIMO RISULTATO C.M.B. RHO -->
+        ${state.lastCmbMatch ? `
+        <div class="bg-[#0F0F11] text-white rounded-2xl p-4 shadow-lg border border-zinc-800">
+          <div class="flex items-center justify-between text-[11px] text-gray-400 mb-2">
+            <span class="font-black uppercase text-[#CC2918]">Ultimo Risultato C.M.B. RHO</span>
+            <span>${state.lastCmbMatch.round} (${state.lastCmbMatch.date})</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-xs font-bold flex-1">${state.lastCmbMatch.homeTeam}</div>
+            <div class="bg-zinc-900 px-3 py-1 rounded-lg font-black text-xs text-green-400">
+              ${state.lastCmbMatch.homeScore} - ${state.lastCmbMatch.awayScore}
+            </div>
+            <div class="text-xs font-bold flex-1 text-right">${state.lastCmbMatch.awayTeam}</div>
+          </div>
+        </div>` : ""}
       `;
+
+      startCountdown(m);
     }
 
     function renderStandings() {
@@ -219,31 +402,45 @@
             </tr>
           </thead>
           <tbody>
-            ${state.standings.map(r => {
-              const isCmb = r.team.toUpperCase().includes("RHO") && (r.team.toUpperCase().includes("C.M.B") || r.team.toUpperCase().includes("CMB"));
-              return `
-                <tr class="border-b border-zinc-900 ${isCmb ? 'bg-[#CC2918]/25 font-black text-white' : ''}">
-                  <td class="py-2.5 text-gray-400">${r.position}</td>
-                  <td class="py-2.5">${r.team}</td>
-                  <td class="py-2.5 text-center font-black text-[#CC2918]">${r.points}</td>
-                  <td class="py-2.5 text-center">${r.played}</td>
-                  <td class="py-2.5 text-center text-green-400">${r.won}</td>
-                  <td class="py-2.5 text-center text-red-400">${r.lost}</td>
-                </tr>
-              `;
-            }).join("")}
+            ${state.standings.map(r => `
+              <tr class="border-b border-zinc-900 ${r.isCmb ? 'bg-[#CC2918]/25 font-black text-white' : ''}">
+                <td class="py-2.5 text-gray-400">${r.position}</td>
+                <td class="py-2.5">${r.team}</td>
+                <td class="py-2.5 text-center font-black text-[#CC2918]">${r.points}</td>
+                <td class="py-2.5 text-center">${r.played}</td>
+                <td class="py-2.5 text-center text-green-400">${r.won}</td>
+                <td class="py-2.5 text-center text-red-400">${r.lost}</td>
+              </tr>
+            `).join("")}
           </tbody>
         </table>
       `;
     }
 
+    function toggleOnlyCmb() {
+      state.onlyCmb = !state.onlyCmb;
+      const btn = document.getElementById("filterCmbBtn");
+      btn.className = state.onlyCmb
+        ? "text-xs font-bold px-3 py-2 rounded-lg border border-[#CC2918] bg-[#CC2918] text-white shrink-0"
+        : "text-xs font-bold px-3 py-2 rounded-lg border border-zinc-700 bg-zinc-900 text-gray-300 shrink-0";
+      renderMatches();
+    }
+
     function renderMatches() {
       const box = document.getElementById("matchesContainer");
-      const list = state.matches.filter(m => !state.onlyCmb || m.isCmb);
+      const selectedRoundKey = document.getElementById("roundSelect").value;
+
+      const list = state.matches.filter(m => {
+        if (state.onlyCmb && !m.isCmb) return false;
+        if (selectedRoundKey && selectedRoundKey !== "ALL" && m.roundKey !== selectedRoundKey) return false;
+        return true;
+      });
+
       if (list.length === 0) {
         box.innerHTML = `<div class="bg-[#0F0F11] text-gray-400 text-xs p-6 rounded-2xl text-center">Nessuna partita trovata per questo filtro.</div>`;
         return;
       }
+
       box.innerHTML = list.map(m => `
         <div class="bg-[#0F0F11] text-white rounded-2xl p-4 border ${m.isCmb ? 'border-[#CC2918]' : 'border-zinc-800'}">
           <div class="flex justify-between text-[11px] text-gray-400 mb-2">
@@ -286,7 +483,7 @@
     }
 
     renderGyms();
-    loadFipData();
+    loadFipData(false);
   </script>
 </body>
 </html>
