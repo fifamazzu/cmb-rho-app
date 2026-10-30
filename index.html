@@ -31,11 +31,18 @@
       backdrop-filter: blur(8px);
       border: 1px solid rgba(255, 255, 255, 0.12);
     }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
   </style>
 </head>
 <body class="min-h-screen pb-24 select-none">
 
-  <!-- TOP BAR CON SELETTORE SQUADRE A PILLOLE -->
+  <!-- TOP BAR CON SELETTORE SQUADRE C.M.B. RHO -->
   <header class="sticky top-0 z-30 bg-[#0F0F11]/95 backdrop-blur-md text-white px-4 pt-3 pb-2.5 border-b border-white/10 shadow-md">
     <div class="max-w-md mx-auto space-y-2.5">
       <div class="flex items-center justify-between">
@@ -58,16 +65,25 @@
         </button>
       </div>
 
-      <!-- BARRA SELETTORE CATEGORIA (DR4 / DR2 / U19) -->
-      <div id="teamPillsBar" class="flex items-center gap-1.5 pt-0.5 overflow-x-auto">
-        <button onclick="selectCmbTeam('DR4')" id="pill-DR4" class="px-3.5 py-1 rounded-full text-[11px] font-extrabold transition bg-[#CC2918] text-white shadow-sm">
+      <!-- SELETTORE A PILLOLE TUTTE LE SQUADRE CMB -->
+      <div id="teamPillsBar" class="flex items-center gap-1.5 pt-0.5 overflow-x-auto no-scrollbar">
+        <button onclick="selectCmbTeam('DR4')" id="pill-DR4" class="px-3 py-1 rounded-full text-[11px] font-extrabold shrink-0 transition bg-[#CC2918] text-white shadow-sm">
           DR4
         </button>
-        <button onclick="selectCmbTeam('DR2')" id="pill-DR2" class="px-3.5 py-1 rounded-full text-[11px] font-bold transition bg-white/10 text-zinc-300 hover:bg-white/15">
+        <button onclick="selectCmbTeam('DR2')" id="pill-DR2" class="px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition bg-white/10 text-zinc-300 hover:bg-white/15">
           DR2
         </button>
-        <button onclick="selectCmbTeam('U19')" id="pill-U19" class="px-3.5 py-1 rounded-full text-[11px] font-bold transition bg-white/10 text-zinc-300 hover:bg-white/15">
+        <button onclick="selectCmbTeam('U19')" id="pill-U19" class="px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition bg-white/10 text-zinc-300 hover:bg-white/15">
           U19
+        </button>
+        <button onclick="selectCmbTeam('U17')" id="pill-U17" class="px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition bg-white/10 text-zinc-300 hover:bg-white/15">
+          U17
+        </button>
+        <button onclick="selectCmbTeam('U17P')" id="pill-U17P" class="px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition bg-white/10 text-zinc-300 hover:bg-white/15">
+          U17 Prom
+        </button>
+        <button onclick="selectCmbTeam('U14')" id="pill-U14" class="px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition bg-white/10 text-zinc-300 hover:bg-white/15">
+          U14
         </button>
       </div>
     </div>
@@ -76,7 +92,6 @@
   <!-- CONTENUTO PRINCIPALE -->
   <main class="max-w-md mx-auto px-3.5 pt-3.5 space-y-4">
 
-    <!-- Box Errori / Configurazione -->
     <div id="errorBox" class="hidden bg-red-950 border border-[#CC2918] text-white p-4 rounded-2xl text-xs"></div>
 
     <!-- SEZIONE 1: HOME -->
@@ -226,6 +241,8 @@
   </nav>
 
   <script>
+    const ALL_TEAM_IDS = ["DR4", "DR2", "U19", "U17", "U17P", "U14"];
+
     const DR4_DEFAULT_GYMS = [
       { team: "C.M.B. RHO", gym: "Centro Sportivo Molinello", address: "Via Trecate 46, 20017 Rho (MI)", query: "Centro Sportivo Molinello Via Trecate Rho" },
       { team: "SAN PAOLO RHO", gym: "Palestra San Paolo Rho", address: "Via Cardinal Ferrari, Rho (MI)", query: "San Paolo Basket Rho Palestra" },
@@ -249,11 +266,12 @@
     const DAYS_SHORT = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
     const DAYS_FULL = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
 
-    // Legge la squadra salvata sul telefono (default: DR4)
-    const savedTeam = localStorage.getItem("cmb_selected_team") || "DR4";
+    const savedTeam = localStorage.getItem("cmb_selected_team");
+    const initialTeam = ALL_TEAM_IDS.includes(savedTeam) ? savedTeam : "DR4";
 
     let state = {
-      activeTeamId: savedTeam,
+      activeTeamId: initialTeam,
+      teamLabel: initialTeam,
       teamSubtitle: "DR4 Girone K",
       standings: [],
       matches: [],
@@ -269,13 +287,13 @@
     };
 
     function updateTeamPillsUI() {
-      ["DR4", "DR2", "U19"].forEach(id => {
+      ALL_TEAM_IDS.forEach(id => {
         const btn = document.getElementById(`pill-${id}`);
         if (!btn) return;
         const isActive = state.activeTeamId === id;
         btn.className = isActive
-          ? "px-3.5 py-1 rounded-full text-[11px] font-extrabold transition bg-[#CC2918] text-white shadow-sm"
-          : "px-3.5 py-1 rounded-full text-[11px] font-bold transition bg-white/10 text-zinc-300 hover:bg-white/15";
+          ? "px-3 py-1 rounded-full text-[11px] font-extrabold shrink-0 transition bg-[#CC2918] text-white shadow-sm"
+          : "px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition bg-white/10 text-zinc-300 hover:bg-white/15";
       });
     }
 
@@ -304,7 +322,7 @@
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank");
     }
 
-    // Condivisione WhatsApp pulita senza emoji corrotte e con categoria dinamica
+    // Condivisione WhatsApp pulita esattamente nel formato richiesto
     function shareMatchWhatsApp(matchId) {
       const m = matchId ? state.matches.find(x => x.id === matchId) : state.nextCmbMatch;
       if (!m) return;
@@ -376,7 +394,7 @@
       if (!m) {
         return `
           <div class="hero-card-cmb text-white rounded-3xl p-6 text-center text-xs text-zinc-400 shadow-xl">
-            Nessuna gara in programma trovata per ${state.teamSubtitle}.
+            Nessuna gara trovata per ${state.teamSubtitle}.
           </div>`;
       }
 
@@ -390,7 +408,7 @@
           <div class="flex items-center justify-between mb-5">
             <div class="flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse shadow-[0_0_8px_#fff]"></span>
-              <span class="text-[11px] font-extrabold uppercase tracking-widest text-zinc-200">Prossima Partita • ${state.activeTeamId}</span>
+              <span class="text-[11px] font-extrabold uppercase tracking-widest text-zinc-200">Prossima • ${state.teamLabel}</span>
             </div>
             <div class="flex items-center gap-1.5">
               <button onclick="shareMatchWhatsApp('${safeId}')" class="glass-box hover:bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full transition">
@@ -597,7 +615,7 @@
                 📈
               </div>
               <div>
-                <h3 class="text-sm font-extrabold text-gray-900">Ultime 5 (${state.activeTeamId})</h3>
+                <h3 class="text-sm font-extrabold text-gray-900">Ultime 5 (${state.teamLabel})</h3>
                 <p class="text-[11px] text-gray-400">Tocca per la stagione intera</p>
               </div>
             </div>
@@ -1032,6 +1050,7 @@
         const res = await fetch(`/api/fip${query}`);
         const data = await res.json();
 
+        if (data.teamLabel) state.teamLabel = data.teamLabel;
         if (data.teamSubtitle) {
           state.teamSubtitle = data.teamSubtitle;
           document.getElementById("headerSubtitle").innerText = data.teamSubtitle;
