@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="CMB RHO" />
   <link rel="apple-touch-icon" href="/logo-cmb.png" />
-  <title>C.M.B. RHO 1969 — DR4 Girone K</title>
+  <title>C.M.B. RHO 1969</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -35,36 +35,51 @@
 </head>
 <body class="min-h-screen pb-24 select-none">
 
-  <!-- TOP BAR -->
-  <header class="sticky top-0 z-30 bg-[#0F0F11]/95 backdrop-blur-md text-white px-4 py-3 border-b border-white/10">
-    <div class="max-w-md mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-[#CC2918] border border-white/30 flex items-center justify-center font-black text-xs overflow-hidden shrink-0 shadow-md">
-          <img src="/logo-cmb.png" alt="CMB" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerText='CMB';" />
+  <!-- TOP BAR CON SELETTORE SQUADRE A PILLOLE -->
+  <header class="sticky top-0 z-30 bg-[#0F0F11]/95 backdrop-blur-md text-white px-4 pt-3 pb-2.5 border-b border-white/10 shadow-md">
+    <div class="max-w-md mx-auto space-y-2.5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-[#CC2918] border border-white/30 flex items-center justify-center font-black text-xs overflow-hidden shrink-0 shadow-md">
+            <img src="/logo-cmb.png" alt="CMB" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerText='CMB';" />
+          </div>
+          <div>
+            <h1 class="font-extrabold text-base tracking-tight leading-none">
+              C.M.B. RHO <span class="text-[#CC2918]">1969</span>
+            </h1>
+            <p class="text-[11px] text-zinc-400 mt-0.5 font-medium">
+              <span id="headerSubtitle">DR4 Girone K</span> • <span id="syncTime">Sync...</span>
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 class="font-extrabold text-base tracking-tight leading-none">
-            C.M.B. RHO <span class="text-[#CC2918]">1969</span>
-          </h1>
-          <p class="text-[11px] text-zinc-400 mt-0.5 font-medium">DR4 Lombardia • Girone K • <span id="syncTime">Sync...</span></p>
-        </div>
+        <button id="syncBtn" onclick="loadFipData(true)" class="bg-white/10 hover:bg-white/15 active:scale-95 text-white text-xs font-semibold px-3 py-2 rounded-xl border border-white/10 flex items-center gap-1.5 transition">
+          <span id="syncIcon">↻</span>
+          <span>Aggiorna</span>
+        </button>
       </div>
-      <button id="syncBtn" onclick="loadFipData(true)" class="bg-white/10 hover:bg-white/15 active:scale-95 text-white text-xs font-semibold px-3 py-2 rounded-xl border border-white/10 flex items-center gap-1.5 transition">
-        <span id="syncIcon">↻</span>
-        <span>Aggiorna</span>
-      </button>
+
+      <!-- BARRA SELETTORE CATEGORIA (DR4 / DR2 / U19) -->
+      <div id="teamPillsBar" class="flex items-center gap-1.5 pt-0.5 overflow-x-auto">
+        <button onclick="selectCmbTeam('DR4')" id="pill-DR4" class="px-3.5 py-1 rounded-full text-[11px] font-extrabold transition bg-[#CC2918] text-white shadow-sm">
+          DR4
+        </button>
+        <button onclick="selectCmbTeam('DR2')" id="pill-DR2" class="px-3.5 py-1 rounded-full text-[11px] font-bold transition bg-white/10 text-zinc-300 hover:bg-white/15">
+          DR2
+        </button>
+        <button onclick="selectCmbTeam('U19')" id="pill-U19" class="px-3.5 py-1 rounded-full text-[11px] font-bold transition bg-white/10 text-zinc-300 hover:bg-white/15">
+          U19
+        </button>
+      </div>
     </div>
   </header>
 
   <!-- CONTENUTO PRINCIPALE -->
   <main class="max-w-md mx-auto px-3.5 pt-3.5 space-y-4">
 
-    <!-- Box Errori -->
+    <!-- Box Errori / Configurazione -->
     <div id="errorBox" class="hidden bg-red-950 border border-[#CC2918] text-white p-4 rounded-2xl text-xs"></div>
 
-    <!-- ========================================== -->
-    <!-- SEZIONE 1: HOME                            -->
-    <!-- ========================================== -->
+    <!-- SEZIONE 1: HOME -->
     <section id="tab-home" class="space-y-4">
       <div id="homeContent" class="space-y-4">
         <div class="hero-card-cmb text-white rounded-3xl p-6 text-center text-xs text-zinc-400 shadow-xl">
@@ -73,14 +88,10 @@
       </div>
     </section>
 
-    <!-- ========================================== -->
-    <!-- SEZIONE 2: CALENDARIO                      -->
-    <!-- ========================================== -->
+    <!-- SEZIONE 2: CALENDARIO -->
     <section id="tab-calendar" class="hidden space-y-4">
-      <!-- Hero Prossima Partita in cima -->
       <div id="calendarHeroBox"></div>
 
-      <!-- Selettore Modalità Calendario -->
       <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200/80 grid grid-cols-2 gap-1">
         <button id="calModeMonth" onclick="setCalendarMode('month')" class="py-2 rounded-xl text-xs font-bold bg-[#0F0F11] text-white transition">
           📅 Calendario Squadra
@@ -90,7 +101,7 @@
         </button>
       </div>
 
-      <!-- SOTTO-VISTA A: CALENDARIO MENSILE + EVENTI -->
+      <!-- VISTA A: CALENDARIO MENSILE -->
       <div id="calendarMonthView" class="space-y-4">
         <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4">
           <div class="flex items-center justify-between gap-2">
@@ -108,7 +119,6 @@
             </select>
           </div>
 
-          <!-- Navigazione Mese -->
           <div class="flex items-center justify-between px-1 pt-1">
             <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 font-bold">‹</button>
             <div id="monthLabel" class="bg-gray-100 px-4 py-1.5 rounded-full text-xs font-bold text-gray-800 lowercase">
@@ -117,47 +127,18 @@
             <button onclick="changeMonth(1)" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 font-bold">›</button>
           </div>
 
-          <!-- Giorni Settimana -->
           <div class="grid grid-cols-7 text-center text-[11px] font-semibold text-gray-400 pt-1">
             <div>L</div><div>M</div><div>M</div><div>G</div><div>V</div><div>S</div><div>D</div>
           </div>
 
-          <!-- Griglia Mese -->
           <div id="monthGrid" class="grid grid-cols-7 gap-y-2 text-center text-xs"></div>
         </div>
 
-        <!-- Card Giorno Selezionato -->
         <div id="selectedDateCard" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"></div>
-
-        <!-- Card Prossimi Eventi -->
         <div id="calendarUpcomingCard" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100"></div>
-
-        <!-- Card Esporta Calendario (.ics) sul Telefono -->
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-3">
-          <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
-              📲
-            </div>
-            <div>
-              <h3 class="text-sm font-extrabold text-gray-900">Sincronizza sul tuo Calendario</h3>
-              <p class="text-[11px] text-gray-400">Salva le partite su iPhone o Google Calendar (.ics)</p>
-            </div>
-          </div>
-          <p class="text-xs text-gray-500 leading-relaxed">
-            Scarica il file <strong>.ics</strong> per aggiungere automaticamente orari, indirizzi delle palestre e promemoria 90 minuti prima della palla a due sul calendario del tuo telefono.
-          </p>
-          <div class="space-y-2 pt-1">
-            <button onclick="downloadNextMatchIcs()" class="w-full bg-[#CC2918] hover:bg-red-700 active:scale-[0.99] text-white font-bold text-xs py-3 rounded-2xl shadow-sm transition">
-              📅 Aggiungi Prossima Partita al Calendario (.ics)
-            </button>
-            <button onclick="downloadAllCmbSeasonIcs()" class="w-full bg-gray-100 hover:bg-gray-200 active:scale-[0.99] text-gray-800 font-bold text-xs py-3 rounded-2xl transition">
-              🗓️ Scarica Tutte le Partite del C.M.B. RHO (.ics)
-            </button>
-          </div>
-        </div>
       </div>
 
-      <!-- SOTTO-VISTA B: ESPLORA CAMPIONATO PER GIORNATA O PER SQUADRA -->
+      <!-- VISTA B: TUTTE LE PARTITE PER GIORNATA O SQUADRA -->
       <div id="calendarLeagueView" class="hidden space-y-3">
         <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 space-y-3">
           <div class="grid grid-cols-2 gap-2">
@@ -169,7 +150,6 @@
             </button>
           </div>
 
-          <!-- Dropdown Giornate -->
           <div id="roundSelectWrapper">
             <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Seleziona Giornata del Campionato</label>
             <select id="roundSelect" onchange="renderLeagueMatches()" class="w-full bg-gray-50 text-gray-900 text-xs font-bold rounded-xl px-3 py-2.5 border border-gray-200 focus:outline-none">
@@ -177,28 +157,24 @@
             </select>
           </div>
 
-          <!-- Dropdown Squadra -->
           <div id="teamSelectWrapper" class="hidden">
-            <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Scegli la Squadra (22 Partite)</label>
+            <label class="block text-[10px] font-bold uppercase text-gray-400 mb-1">Scegli la Squadra</label>
             <select id="teamSelect" onchange="renderLeagueMatches()" class="w-full bg-gray-50 text-gray-900 text-xs font-bold rounded-xl px-3 py-2.5 border border-gray-200 focus:outline-none">
-              <option value="ALL">Tutte le 12 Squadre</option>
+              <option value="ALL">Tutte le Squadre</option>
             </select>
           </div>
         </div>
 
-        <!-- Elenco Partite Filtrate -->
         <div id="matchesContainer" class="space-y-3"></div>
       </div>
     </section>
 
-    <!-- ========================================== -->
-    <!-- SEZIONE 3: CLASSIFICA COMPLETA             -->
-    <!-- ========================================== -->
+    <!-- SEZIONE 3: CLASSIFICA -->
     <section id="tab-standings" class="hidden space-y-3">
       <div class="bg-white rounded-3xl p-4 shadow-sm border border-gray-100">
         <div class="flex items-center justify-between mb-3 px-1">
           <div>
-            <h2 class="text-sm font-extrabold text-gray-900">Classifica Girone K</h2>
+            <h2 id="standingsTitle" class="text-sm font-extrabold text-gray-900">Classifica Ufficiale</h2>
             <p class="text-[11px] text-gray-400">Tocca una squadra per vedere tutte le sue partite</p>
           </div>
           <span class="bg-red-50 text-[#CC2918] text-[10px] font-black px-2.5 py-1 rounded-full uppercase">FIP Live</span>
@@ -209,13 +185,11 @@
       </div>
     </section>
 
-    <!-- ========================================== -->
-    <!-- SEZIONE 4: PALESTRE DEL GIRONE             -->
-    <!-- ========================================== -->
+    <!-- SEZIONE 4: PALESTRE -->
     <section id="tab-gyms" class="hidden space-y-3">
       <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2">
         <span class="text-gray-400 text-sm">🔍</span>
-        <input id="gymSearch" type="text" oninput="renderGyms()" placeholder="Cerca squadra o palestra del Girone K..." class="bg-transparent text-gray-900 text-xs font-medium w-full focus:outline-none" />
+        <input id="gymSearch" type="text" oninput="renderGyms()" placeholder="Cerca squadra o palestra..." class="bg-transparent text-gray-900 text-xs font-medium w-full focus:outline-none" />
       </div>
       <div id="gymsContainer" class="space-y-3"></div>
     </section>
@@ -223,7 +197,7 @@
   </main>
 
   <!-- MODAL DETTAGLIO PARTITA -->
-  <div id="matchModal" onclick="closeMatchModal()" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+  <div id="matchModal" onclick="closeMatchModal(event)" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div onclick="event.stopPropagation()" class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 space-y-4 shadow-2xl">
       <div id="matchModalContent"></div>
     </div>
@@ -252,7 +226,7 @@
   </nav>
 
   <script>
-    const GYMS = [
+    const DR4_DEFAULT_GYMS = [
       { team: "C.M.B. RHO", gym: "Centro Sportivo Molinello", address: "Via Trecate 46, 20017 Rho (MI)", query: "Centro Sportivo Molinello Via Trecate Rho" },
       { team: "SAN PAOLO RHO", gym: "Palestra San Paolo Rho", address: "Via Cardinal Ferrari, Rho (MI)", query: "San Paolo Basket Rho Palestra" },
       { team: "VICTOR BASKET RHO", gym: "Palestra Victor Basket Rho", address: "Rho (MI)", query: "Victor Basket Rho Palestra" },
@@ -275,7 +249,12 @@
     const DAYS_SHORT = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
     const DAYS_FULL = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
 
+    // Legge la squadra salvata sul telefono (default: DR4)
+    const savedTeam = localStorage.getItem("cmb_selected_team") || "DR4";
+
     let state = {
+      activeTeamId: savedTeam,
+      teamSubtitle: "DR4 Girone K",
       standings: [],
       matches: [],
       nextCmbMatch: null,
@@ -288,6 +267,27 @@
       selectedMonthTeam: "CMB",
       countdownTimer: null
     };
+
+    function updateTeamPillsUI() {
+      ["DR4", "DR2", "U19"].forEach(id => {
+        const btn = document.getElementById(`pill-${id}`);
+        if (!btn) return;
+        const isActive = state.activeTeamId === id;
+        btn.className = isActive
+          ? "px-3.5 py-1 rounded-full text-[11px] font-extrabold transition bg-[#CC2918] text-white shadow-sm"
+          : "px-3.5 py-1 rounded-full text-[11px] font-bold transition bg-white/10 text-zinc-300 hover:bg-white/15";
+      });
+    }
+
+    function selectCmbTeam(teamId) {
+      if (state.activeTeamId === teamId && state.matches.length > 0) return;
+      state.activeTeamId = teamId;
+      localStorage.setItem("cmb_selected_team", teamId);
+      state.selectedDateStr = "";
+      state.selectedMonthTeam = "CMB";
+      updateTeamPillsUI();
+      loadFipData(false);
+    }
 
     function switchTab(tab) {
       ["home", "calendar", "standings", "gyms"].forEach(t => {
@@ -304,6 +304,25 @@
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank");
     }
 
+    // Condivisione WhatsApp pulita senza emoji corrotte e con categoria dinamica
+    function shareMatchWhatsApp(matchId) {
+      const m = matchId ? state.matches.find(x => x.id === matchId) : state.nextCmbMatch;
+      if (!m) return;
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.gym)}`;
+
+      const text = [
+        `${state.teamSubtitle} • ${m.round}`,
+        `*${m.homeTeam} vs ${m.awayTeam}*`,
+        `Data: *${formatFullDayHeader(m.date)}*`,
+        `Orario: *Ore ${m.time}*`,
+        `Palestra: *${m.gym}*`,
+        `*Naviga con Google Maps:*`,
+        mapsUrl
+      ].join("\n");
+
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    }
+
     function normalizeKey(str) {
       return (str || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     }
@@ -313,10 +332,6 @@
       const ka = normalizeKey(a);
       const kb = normalizeKey(b);
       return ka === kb || ka.includes(kb) || kb.includes(ka);
-    }
-
-    function findStanding(teamName) {
-      return state.standings.find(s => isSameTeam(s.team, teamName)) || null;
     }
 
     function formatLongDate(dateStr) {
@@ -357,161 +372,11 @@
       return { title, sub };
     }
 
-    // ====================================================
-    // 1. CONDIVISIONE PROMEMORIA PARTITA SU WHATSAPP
-    // ====================================================
-    function shareMatchOnWhatsApp(matchId) {
-      const m = matchId
-        ? state.matches.find(x => x.id === matchId)
-        : state.nextCmbMatch;
-      if (!m) return;
-
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.gym)}`;
-      const isPlayed = m.played && m.homeScore !== null && m.awayScore !== null;
-
-      const lines = [
-        isPlayed ? `🏀 *RISULTATO FINALE — C.M.B. RHO 1969*` : `🏀 *PROMEMORIA GARA — C.M.B. RHO 1969*`,
-        `🏆 DR4 Girone K • ${m.round}`,
-        ``,
-        isPlayed
-          ? `⚔️ *${m.homeTeam} ${m.homeScore} - ${m.awayScore} ${m.awayTeam}*`
-          : `⚔️ *${m.homeTeam} vs ${m.awayTeam}* (${m.isCmbHome ? "In Casa" : "Trasferta"})`,
-        `📅 Data: *${formatFullDayHeader(m.date)}*`,
-        `🕘 Orario: *Ore ${m.time}*`,
-        `📍 Palestra: *${m.gym}*`,
-        `🎽 Arbitri: ${m.referees.join(" • ")}`,
-        ``,
-        `🧭 *Naviga con Google Maps:*`,
-        mapsUrl
-      ];
-
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
-      window.open(waUrl, "_blank");
-    }
-
-    // ====================================================
-    // 2. GENERATORE FILE CALENDARIO (.ICS) PER IPHONE/ANDROID
-    // ====================================================
-    function escapeIcsText(str) {
-      return (str || "")
-        .replace(/\\/g, "\\\\")
-        .replace(/;/g, "\\;")
-        .replace(/,/g, "\\,")
-        .replace(/\n/g, "\\n");
-    }
-
-    function buildIcsEventBlock(m) {
-      const dateMatch = (m.date || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-      if (!dateMatch) return null;
-
-      const dd = dateMatch[1];
-      const mm = dateMatch[2];
-      const yyyy = dateMatch[3];
-
-      const timeMatch = (m.time || "").match(/^(\d{2}):(\d{2})$/);
-      const hh = timeMatch ? parseInt(timeMatch[1], 10) : 21;
-      const min = timeMatch ? parseInt(timeMatch[2], 10) : 0;
-
-      const startObj = new Date(Number(yyyy), Number(mm) - 1, Number(dd), hh, min, 0);
-      // Durata standard partita di basket: 1 ora e 45 minuti
-      const endObj = new Date(startObj.getTime() + 105 * 60 * 1000);
-
-      const pad = (n) => String(n).padStart(2, "0");
-      const formatIcsLocal = (d) =>
-        `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-
-      const dtStart = formatIcsLocal(startObj);
-      const dtEnd = formatIcsLocal(endObj);
-      const dtStamp = formatIcsLocal(new Date()) + "Z";
-
-      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.gym)}`;
-      const summary = `🏀 ${m.homeTeam} vs ${m.awayTeam}`;
-      const description = [
-        `Campionato DR4 Lombardia - Girone K (${m.round})`,
-        `Impegno: ${m.isCmbHome ? "In Casa" : "Trasferta"}`,
-        `Campo: ${m.gym}`,
-        `Arbitri: ${m.referees.join(", ")}`,
-        m.matchCode ? `Codice Gara FIP: ${m.matchCode}` : "",
-        `Google Maps: ${mapsUrl}`
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      return [
-        "BEGIN:VEVENT",
-        `UID:cmbrho-${m.id.replace(/[^a-zA-Z0-9]/g, "")}@cmbrho1969.it`,
-        `DTSTAMP:${dtStamp}`,
-        `DTSTART;TZID=Europe/Rome:${dtStart}`,
-        `DTEND;TZID=Europe/Rome:${dtEnd}`,
-        `SUMMARY:${escapeIcsText(summary)}`,
-        `LOCATION:${escapeIcsText(m.gym)}`,
-        `DESCRIPTION:${escapeIcsText(description)}`,
-        "BEGIN:VALARM",
-        "TRIGGER:-PT90M",
-        "ACTION:DISPLAY",
-        "DESCRIPTION:Ritrovo Partita C.M.B. RHO tra 90 minuti!",
-        "END:VALARM",
-        "END:VEVENT"
-      ].join("\r\n");
-    }
-
-    function triggerIcsDownload(eventsArray, filename) {
-      const validBlocks = eventsArray.map(buildIcsEventBlock).filter(Boolean);
-      if (validBlocks.length === 0) {
-        alert("Data della partita non ancora definita dalla FIP.");
-        return;
-      }
-
-      const icsContent = [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//C.M.B. RHO 1969//DR4 Girone K//IT",
-        "CALSCALE:GREGORIAN",
-        "METHOD:PUBLISH",
-        "X-WR-CALNAME:C.M.B. RHO 1969 Partite",
-        "X-WR-TIMEZONE:Europe/Rome",
-        ...validBlocks,
-        "END:VCALENDAR"
-      ].join("\r\n");
-
-      const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
-    }
-
-    function downloadMatchIcs(matchId) {
-      const m = matchId
-        ? state.matches.find(x => x.id === matchId)
-        : state.nextCmbMatch;
-      if (!m) return;
-      const cleanName = `cmb-rho-${m.date.replace(/\//g, "-")}.ics`;
-      triggerIcsDownload([m], cleanName);
-    }
-
-    function downloadNextMatchIcs() {
-      if (!state.nextCmbMatch) return;
-      downloadMatchIcs(state.nextCmbMatch.id);
-    }
-
-    function downloadAllCmbSeasonIcs() {
-      const cmbFuture = state.matches.filter(m => m.isCmb && m.date.includes("/"));
-      triggerIcsDownload(cmbFuture, "calendario-cmb-rho-1969.ics");
-    }
-
-    // ====================================================
-    // 3. COSTRUZIONE HERO CARD + BOTTONI AZIONE RAPIDA
-    // ====================================================
-    function buildHeroCardHtml(m, countdownTargetId, showQuickActions = false) {
+    function buildHeroCardHtml(m, countdownTargetId) {
       if (!m) {
         return `
           <div class="hero-card-cmb text-white rounded-3xl p-6 text-center text-xs text-zinc-400 shadow-xl">
-            Nessuna gara in programma trovata.
+            Nessuna gara in programma trovata per ${state.teamSubtitle}.
           </div>`;
       }
 
@@ -522,18 +387,21 @@
 
       return `
         <div class="hero-card-cmb text-white rounded-3xl p-5 shadow-xl relative overflow-hidden">
-          <!-- Top Row -->
           <div class="flex items-center justify-between mb-5">
             <div class="flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse shadow-[0_0_8px_#fff]"></span>
-              <span class="text-[11px] font-extrabold uppercase tracking-widest text-zinc-200">Prossima Partita • ${m.round}</span>
+              <span class="text-[11px] font-extrabold uppercase tracking-widest text-zinc-200">Prossima Partita • ${state.activeTeamId}</span>
             </div>
-            <span class="glass-box text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider shrink-0">
-              ${badgeText}
-            </span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="shareMatchWhatsApp('${safeId}')" class="glass-box hover:bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full transition">
+                Condividi WA
+              </button>
+              <span class="glass-box text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider">
+                ${badgeText}
+              </span>
+            </div>
           </div>
 
-          <!-- Center Row -->
           <div class="flex items-center gap-4 my-5">
             <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#CC2918] to-amber-600 p-0.5 shrink-0 shadow-lg">
               <div class="w-full h-full rounded-full bg-[#151518] flex items-center justify-center text-3xl">
@@ -552,7 +420,6 @@
             </div>
           </div>
 
-          <!-- Bottom Row: Countdown + Data/Ora -->
           <div class="flex items-end justify-between gap-2 pt-3 border-t border-white/10">
             <div id="${countdownTargetId}" class="flex items-center gap-1.5"></div>
             <div class="text-right shrink-0">
@@ -560,123 +427,6 @@
               <div class="text-[11px] text-zinc-400 font-medium mt-1">${formatLongDate(m.date)}</div>
             </div>
           </div>
-
-          ${showQuickActions ? `
-          <!-- Pulsanti Azione Rapida: WhatsApp & Calendario .ics -->
-          <div class="grid grid-cols-2 gap-2 mt-4 pt-3.5 border-t border-white/10">
-            <button onclick="shareMatchOnWhatsApp('${safeId}')" class="glass-box hover:bg-white/15 active:scale-95 text-white text-[11px] font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition">
-              <span>💬</span>
-              <span>Invia su WhatsApp</span>
-            </button>
-            <button onclick="downloadMatchIcs('${safeId}')" class="bg-[#CC2918] hover:bg-red-700 active:scale-95 text-white text-[11px] font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md transition">
-              <span>📅</span>
-              <span>Salva in Calendario</span>
-            </button>
-          </div>` : ""}
-        </div>
-      `;
-    }
-
-    // ====================================================
-    // 4. CARD TESTA A TESTA (SCOUTING PRE-PARTITA)
-    // ====================================================
-    function buildHeadToHeadCardHtml(m) {
-      if (!m) return "";
-      const cmb = state.standings.find(s => s.isCmb);
-      const opponentName = m.isCmbHome ? m.awayTeam : m.homeTeam;
-      const opp = findStanding(opponentName);
-
-      if (!cmb || !opp) return "";
-
-      // Calcola percentuale per le barre di confronto
-      const totalPpg = (cmb.ppg || 1) + (opp.ppg || 1);
-      const cmbPpgPct = Math.round(((cmb.ppg || 1) / totalPpg) * 100);
-
-      const totalOppg = (cmb.oppg || 1) + (opp.oppg || 1);
-      const cmbOppgPct = Math.round(((cmb.oppg || 1) / totalOppg) * 100);
-
-      // Cerca se c'è già stato uno scontro diretto giocato in stagione
-      const prevH2H = state.matches.find(
-        x =>
-          x.played &&
-          x.isCmb &&
-          (isSameTeam(x.homeTeam, opponentName) || isSameTeam(x.awayTeam, opponentName))
-      );
-
-      let prevHtml = `<div class="text-[11px] text-gray-400 text-center pt-2 border-t border-gray-100">Primo scontro diretto stagionale</div>`;
-      if (prevH2H) {
-        const cmbScore = prevH2H.isCmbHome ? prevH2H.homeScore : prevH2H.awayScore;
-        const oppScore = prevH2H.isCmbHome ? prevH2H.awayScore : prevH2H.homeScore;
-        const diff = cmbScore - oppScore;
-        const diffLabel = diff > 0 ? `+${diff} CMB` : `${diff} CMB`;
-        prevHtml = `
-          <div class="flex items-center justify-between text-[11px] pt-2.5 border-t border-gray-100">
-            <span class="text-gray-400 font-semibold">Precedente (${prevH2H.round}):</span>
-            <span class="font-extrabold ${diff > 0 ? 'text-emerald-600' : 'text-[#CC2918]'}">
-              ${prevH2H.homeScore}-${prevH2H.awayScore} (${diffLabel})
-            </span>
-          </div>`;
-      }
-
-      return `
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
-                ⚔️
-              </div>
-              <div>
-                <h3 class="text-sm font-extrabold text-gray-900">Testa a Testa</h3>
-                <p class="text-[11px] text-gray-400">Scouting pre-partita e medie</p>
-              </div>
-            </div>
-            <span class="text-[10px] font-extrabold uppercase bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-              Confronto
-            </span>
-          </div>
-
-          <!-- Header Squadre -->
-          <div class="grid grid-cols-3 items-center text-center bg-gray-50 rounded-2xl p-3">
-            <div>
-              <div class="text-xs font-black text-[#CC2918] truncate">C.M.B. RHO</div>
-              <div class="text-lg font-black text-gray-900 mt-0.5">${cmb.position}°</div>
-              <div class="text-[10px] text-gray-400 font-bold">${cmb.points} PT (${cmb.won}V-${cmb.lost}P)</div>
-            </div>
-            <div class="text-[10px] font-black text-gray-300 uppercase">VS</div>
-            <div>
-              <div class="text-xs font-black text-gray-800 truncate">${opp.team}</div>
-              <div class="text-lg font-black text-gray-900 mt-0.5">${opp.position}°</div>
-              <div class="text-[10px] text-gray-400 font-bold">${opp.points} PT (${opp.won}V-${opp.lost}P)</div>
-            </div>
-          </div>
-
-          <!-- Barra Media Punti Segnati (MPP) -->
-          <div class="space-y-1.5">
-            <div class="flex justify-between text-xs font-extrabold">
-              <span class="text-[#CC2918]">${cmb.ppg}</span>
-              <span class="text-[11px] text-gray-400 font-semibold">Media Punti Segnati (MPP)</span>
-              <span class="text-gray-800">${opp.ppg}</span>
-            </div>
-            <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden flex">
-              <div class="bg-[#CC2918] h-full" style="width: ${cmbPpgPct}%"></div>
-              <div class="bg-zinc-700 h-full" style="width: ${100 - cmbPpgPct}%"></div>
-            </div>
-          </div>
-
-          <!-- Barra Media Punti Subiti (MSP) -->
-          <div class="space-y-1.5">
-            <div class="flex justify-between text-xs font-extrabold">
-              <span class="text-[#CC2918]">${cmb.oppg}</span>
-              <span class="text-[11px] text-gray-400 font-semibold">Media Punti Subiti (MSP)</span>
-              <span class="text-gray-800">${opp.oppg}</span>
-            </div>
-            <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden flex">
-              <div class="bg-[#CC2918] h-full" style="width: ${cmbOppgPct}%"></div>
-              <div class="bg-zinc-700 h-full" style="width: ${100 - cmbOppgPct}%"></div>
-            </div>
-          </div>
-
-          ${prevHtml}
         </div>
       `;
     }
@@ -784,7 +534,7 @@
       const cmbRow = state.standings.find(s => s.isCmb) || null;
 
       if (!m) {
-        container.innerHTML = buildHeroCardHtml(null, "homeCountdown", false);
+        container.innerHTML = buildHeroCardHtml(null, "homeCountdown");
         return;
       }
 
@@ -817,10 +567,8 @@
       }
 
       container.innerHTML = `
-        <!-- 1. HERO CARD PROSSIMA PARTITA + WHATSAPP & .ICS -->
-        ${buildHeroCardHtml(m, "homeCountdown", true)}
+        ${buildHeroCardHtml(m, "homeCountdown")}
 
-        <!-- 2. CARD PALESTRA VISUAL + GOOGLE MAPS -->
         <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
           <div class="arena-banner p-5 pt-10 text-white relative">
             <span class="absolute top-3.5 right-4 bg-white/15 backdrop-blur-xs text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
@@ -842,10 +590,6 @@
           </button>
         </div>
 
-        <!-- 3. CARD TESTA A TESTA (SCOUTING PRE-PARTITA) -->
-        ${buildHeadToHeadCardHtml(m)}
-
-        <!-- 4. CARD ULTIME 5 & RENDIMENTO -->
         <div onclick="openTeamSeason('C.M.B. RHO')" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4 cursor-pointer active:scale-[0.99] transition">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -853,7 +597,7 @@
                 📈
               </div>
               <div>
-                <h3 class="text-sm font-extrabold text-gray-900">Ultime 5</h3>
+                <h3 class="text-sm font-extrabold text-gray-900">Ultime 5 (${state.activeTeamId})</h3>
                 <p class="text-[11px] text-gray-400">Tocca per la stagione intera</p>
               </div>
             </div>
@@ -882,7 +626,6 @@
           </div>
         </div>
 
-        <!-- 5. CARD PROSSIMI EVENTI -->
         <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-2">
           <div class="flex items-center gap-3 mb-2">
             <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
@@ -890,7 +633,7 @@
             </div>
             <div>
               <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
-              <p class="text-[11px] text-gray-400">Clicca per dettagli, WhatsApp o file .ics</p>
+              <p class="text-[11px] text-gray-400">Clicca per i dettagli e gli arbitri</p>
             </div>
           </div>
           <div>
@@ -972,7 +715,7 @@
     }
 
     function renderMonthlyCalendar() {
-      document.getElementById("calendarHeroBox").innerHTML = buildHeroCardHtml(state.nextCmbMatch, "calCountdown", false);
+      document.getElementById("calendarHeroBox").innerHTML = buildHeroCardHtml(state.nextCmbMatch, "calCountdown");
 
       const { year, month } = state.monthYear;
       document.getElementById("monthLabel").innerText = `${MONTHS_NAMES[month]} ${year}`;
@@ -1072,7 +815,7 @@
           </div>
           <div>
             <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
-            <p class="text-[11px] text-gray-400">Clicca per dettagli, WhatsApp o file .ics</p>
+            <p class="text-[11px] text-gray-400">Clicca per i dettagli</p>
           </div>
         </div>
         <div>
@@ -1093,18 +836,18 @@
             <span>${m.date} • ${m.time}</span>
           </div>
           <div class="flex items-center justify-between gap-2 my-2.5">
-            <div class="text-xs font-bold flex-1 ${isSameTeam(m.homeTeam, 'C.M.B. RHO') ? 'text-[#CC2918]' : 'text-white'}">${m.homeTeam}</div>
+            <div class="text-xs font-bold flex-1 ${m.isCmbHome ? 'text-[#CC2918]' : 'text-white'}">${m.homeTeam}</div>
             <div class="bg-zinc-900 border border-zinc-800 px-3 py-1 rounded-xl font-black text-xs text-[#CC2918]">
               ${m.played ? `${m.homeScore} - ${m.awayScore}` : "VS"}
             </div>
-            <div class="text-xs font-bold flex-1 text-right ${isSameTeam(m.awayTeam, 'C.M.B. RHO') ? 'text-[#CC2918]' : 'text-white'}">${m.awayTeam}</div>
+            <div class="text-xs font-bold flex-1 text-right ${m.isCmb && !m.isCmbHome ? 'text-[#CC2918]' : 'text-white'}">${m.awayTeam}</div>
           </div>
-          <div class="mt-3 pt-2.5 border-t border-zinc-800/80 text-[11px] text-zinc-300 space-y-1.5">
+          <div class="mt-3 pt-2.5 border-t border-zinc-800/80 text-[11px] text-zinc-300 space-y-1">
             <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(" • ")}</div>
-            <div class="flex items-center justify-between pt-1">
-              <span class="text-zinc-400 truncate pr-2">📍 ${m.gym}</span>
-              <div class="flex items-center gap-2 shrink-0">
-                <button onclick="downloadMatchIcs('${safeId}')" class="bg-zinc-800 hover:bg-zinc-700 text-white px-2.5 py-1 rounded-lg font-bold text-[10px]">📅 .ics</button>
+            <div class="flex items-center justify-between pt-1 gap-2">
+              <span class="text-zinc-400 truncate">📍 ${m.gym}</span>
+              <div class="flex items-center gap-3 shrink-0">
+                ${m.isCmb ? `<button onclick="shareMatchWhatsApp('${safeId}')" class="text-emerald-400 font-bold">WA ↗</button>` : ""}
                 <button onclick="openMaps('${safeGymQuery}')" class="text-[#CC2918] font-bold">Maps ↗</button>
               </div>
             </div>
@@ -1140,6 +883,8 @@
 
     function renderStandings() {
       const box = document.getElementById("standingsContainer");
+      document.getElementById("standingsTitle").innerText = `Classifica ${state.teamSubtitle}`;
+
       if (state.standings.length === 0) {
         box.innerHTML = "Nessuna riga di classifica trovata.";
         return;
@@ -1195,7 +940,7 @@
 
       content.innerHTML = `
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-          <span class="bg-red-50 text-[#CC2918] text-[10px] font-black uppercase px-2.5 py-1 rounded-full">${m.round}</span>
+          <span class="bg-red-50 text-[#CC2918] text-[10px] font-black uppercase px-2.5 py-1 rounded-full">${state.teamSubtitle} • ${m.round}</span>
           <button onclick="closeMatchModal()" class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 font-bold text-sm">✕</button>
         </div>
         <div class="text-center space-y-2 py-2">
@@ -1210,17 +955,14 @@
           <div>📍 <strong>Campo:</strong> ${m.gym}</div>
           <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(" • ")}</div>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="shareMatchOnWhatsApp('${safeId}')" class="bg-emerald-600 text-white font-bold text-xs py-3 rounded-2xl shadow-sm">
-            💬 WhatsApp
+        <div class="grid grid-cols-2 gap-2.5">
+          <button onclick="openMaps('${safeGymQuery}')" class="w-full bg-[#CC2918] text-white font-bold text-xs py-3.5 rounded-2xl shadow-md">
+            🧭 Google Maps
           </button>
-          <button onclick="downloadMatchIcs('${safeId}')" class="bg-[#0F0F11] text-white font-bold text-xs py-3 rounded-2xl shadow-sm">
-            📅 Salva .ics
+          <button onclick="shareMatchWhatsApp('${safeId}')" class="w-full bg-[#0F0F11] text-white font-bold text-xs py-3.5 rounded-2xl shadow-md">
+            📲 Condividi WA
           </button>
         </div>
-        <button onclick="openMaps('${safeGymQuery}')" class="w-full bg-[#CC2918] text-white font-bold text-xs py-3.5 rounded-2xl shadow-md">
-          🧭 Apri Palestra in Google Maps
-        </button>
       `;
       modal.classList.remove("hidden");
     }
@@ -1229,21 +971,54 @@
       document.getElementById("matchModal").classList.add("hidden");
     }
 
+    function getActiveGymsList() {
+      if (state.activeTeamId === "DR4") return DR4_DEFAULT_GYMS;
+      const map = new Map();
+      for (const m of state.matches) {
+        if (m.homeTeam && m.gym && !map.has(m.homeTeam)) {
+          const { title, sub } = splitGymTitleAndSub(m.gym);
+          map.set(m.homeTeam, {
+            team: m.homeTeam,
+            gym: title,
+            address: sub,
+            query: m.gym
+          });
+        }
+      }
+      return Array.from(map.values());
+    }
+
     function renderGyms() {
       const q = (document.getElementById("gymSearch").value || "").toLowerCase();
       const box = document.getElementById("gymsContainer");
-      box.innerHTML = GYMS.filter(g => g.team.toLowerCase().includes(q) || g.address.toLowerCase().includes(q)).map(g => `
-        <div class="bg-white text-gray-900 rounded-3xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-[11px] font-black text-[#CC2918] truncate">${g.team}</div>
-            <div class="text-sm font-extrabold text-gray-900 truncate">${g.gym}</div>
-            <div class="text-xs text-gray-400 truncate">${g.address}</div>
+      const gymsList = getActiveGymsList();
+
+      const filtered = gymsList.filter(g =>
+        g.team.toLowerCase().includes(q) ||
+        g.gym.toLowerCase().includes(q) ||
+        g.address.toLowerCase().includes(q)
+      );
+
+      if (filtered.length === 0) {
+        box.innerHTML = `<div class="bg-white text-gray-400 text-xs p-6 rounded-3xl text-center border border-gray-100">Nessuna palestra trovata.</div>`;
+        return;
+      }
+
+      box.innerHTML = filtered.map(g => {
+        const safeQ = g.query.replace(/'/g, "\\'");
+        return `
+          <div class="bg-white text-gray-900 rounded-3xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-[11px] font-black text-[#CC2918] truncate">${g.team}</div>
+              <div class="text-sm font-extrabold text-gray-900 truncate">${g.gym}</div>
+              <div class="text-xs text-gray-400 truncate">${g.address}</div>
+            </div>
+            <button onclick="openMaps('${safeQ}')" class="bg-[#0F0F11] hover:bg-[#CC2918] text-white text-xs font-bold px-4 py-2.5 rounded-2xl shrink-0 transition">
+              Maps ↗
+            </button>
           </div>
-          <button onclick="openMaps('${g.query}')" class="bg-[#0F0F11] hover:bg-[#CC2918] text-white text-xs font-bold px-4 py-2.5 rounded-2xl shrink-0 transition">
-            Maps ↗
-          </button>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     }
 
     async function loadFipData(force = false) {
@@ -1253,15 +1028,24 @@
       errBox.classList.add("hidden");
 
       try {
-        const res = await fetch(`/api/fip${force ? "?force=1" : ""}`);
+        const query = `?team=${encodeURIComponent(state.activeTeamId)}${force ? "&force=1" : ""}`;
+        const res = await fetch(`/api/fip${query}`);
         const data = await res.json();
-        if (!data.ok) throw new Error(data.error || "Errore lettura FIP");
+
+        if (data.teamSubtitle) {
+          state.teamSubtitle = data.teamSubtitle;
+          document.getElementById("headerSubtitle").innerText = data.teamSubtitle;
+        }
+
+        if (!data.ok) {
+          throw new Error(data.error || "Errore lettura FIP");
+        }
 
         state.standings = data.standings || [];
         state.matches = data.matches || [];
         state.nextCmbMatch = data.nextCmbMatch || null;
         state.upcomingCmbMatches = data.upcomingCmbMatches || [];
-        state.todayNum = data.todayNum || 20261029;
+        state.todayNum = data.todayNum || 20261030;
 
         if (!state.selectedDateStr && state.nextCmbMatch && state.nextCmbMatch.date.includes("/")) {
           state.selectedDateStr = state.nextCmbMatch.date;
@@ -1285,7 +1069,7 @@
 
         const tSel = document.getElementById("teamSelect");
         tSel.innerHTML =
-          '<option value="ALL">Tutte le 12 Squadre</option>' +
+          '<option value="ALL">Tutte le Squadre</option>' +
           allTeams.map(t => `<option value="${t}">${t}</option>`).join("");
 
         const mTeamSel = document.getElementById("monthTeamSelect");
@@ -1297,15 +1081,17 @@
         renderMonthlyCalendar();
         renderLeagueMatches();
         renderStandings();
+        renderGyms();
         startGlobalCountdown();
       } catch (e) {
         errBox.classList.remove("hidden");
-        errBox.innerHTML = `<strong>Attenzione:</strong> ${e.message}`;
+        errBox.innerHTML = `<strong>Info (${state.activeTeamId}):</strong> ${e.message}`;
       } finally {
         icon.classList.remove("animate-spin");
       }
     }
 
+    updateTeamPillsUI();
     renderGyms();
     loadFipData(false);
   </script>
