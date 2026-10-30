@@ -1,7 +1,29 @@
 const cheerio = require("cheerio");
 
-const BASE_FIP_URL =
-  "https://fip.it/risultati/?group=campionati-regionali&regione_codice=LO&comitato_codice=PVA&sesso=M&codice_campionato=2DM&codice_fase=1&codice_girone=85812";
+// ============================================================================
+// CONFIGURAZIONE SQUADRE C.M.B. RHO
+// Incolla nei campi "url" i link della pagina risultati FIP di DR2 e U19
+// ============================================================================
+const TEAMS_CONFIG = {
+  DR4: {
+    id: "DR4",
+    label: "DR4",
+    subtitle: "DR4 Girone K",
+    url: "https://fip.it/risultati/?group=campionati-regionali&regione_codice=LO&comitato_codice=PVA&sesso=M&codice_campionato=2DM&codice_fase=1&codice_girone=85812"
+  },
+  DR2: {
+    id: "DR2",
+    label: "DR2",
+    subtitle: "DR2 Lombardia",
+    url: "https://fip.it/risultati/?group=campionati-regionali&sesso=M&comitato_codice=RLO&codice_campionato=PM&regione_codice=LO" // <-- Incolla qui il link FIP della DR2
+  },
+  U19: {
+    id: "U19",
+    label: "U19",
+    subtitle: "Under 19",
+    url: "https://fip.it/risultati/?group=campionati-regionali&regione_codice=LO&comitato_codice=PVA&sesso=M&codice_campionato=U19S/M&codice_fase=1&codice_girone=85569" // <-- Incolla qui il link FIP dell'Under 19
+  }
+};
 
 const HEADERS = {
   "User-Agent":
@@ -36,23 +58,15 @@ const INFO_LABELS = [
   { key: "stop", regex: /^(Segnapunti|Cronometrista|24\s*secondi|Osservatore)$/i }
 ];
 
-let CACHE = { timestamp: 0, data: null };
+// Cache separata per ogni squadra (durata 2 minuti)
+const CACHE = {};
 
 async function fetchHtml(url) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  try {
-    const response = await fetch(url, {
-      headers: HEADERS,
-      signal: controller.signal
-    });
-    if (!response.ok) {
-      throw new Error(`FIP.it HTTP ${response.status}`);
-    }
-    return await response.text();
-  } finally {
-    clearTimeout(timeout);
+  const response = await fetch(url, { headers: HEADERS });
+  if (!response.ok) {
+    throw new Error(`FIP.it ha risposto con stato HTTP ${response.status}`);
   }
+  return await response.text();
 }
 
 function isCmbTeam(name) {
@@ -64,10 +78,15 @@ function isCmbTeam(name) {
   );
 }
 
-function normalizeTeamKey(name) {
-  return (name || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "");
+function normalizeKey(str) {
+  return (str || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function isSameTeam(a, b) {
+  if (!a || !b) return false;
+  const ka = normalizeKey(a);
+  const kb = normalizeKey(b);
+  return ka === kb || ka.includes(kb) || kb.includes(ka);
 }
 
 function parseStandings($) {
@@ -82,14 +101,13 @@ function parseStandings($) {
 
     if (cols.length >= 5) {
       const firstIsNum = /^\d+$/.test(cols[0]);
-      const idxOffset = firstIsNum ? 1 : 0;
-      const team = cols[idxOffset];
-      const points = parseInt(cols[idxOffset + 1], 10);
-      const played = parseInt(cols[idxOffset + 2], 10) || 0;
-      const won = parseInt(cols[idxOffset + 3], 10) || 0;
-      const lost = parseInt(cols[idxOffset + 4], 10) || 0;
-      const pfCol = parseInt(cols[idxOffset + 5], 10);
-      const psCol = parseInt(cols[idxOffset + 6], 10);
+      const team = firstIsNum ? cols[1] : cols[0];
+      const points = parseInt(firstIsNum ? cols[2] : cols[1], 10);
+      const played = parseInt(firstIsNum ? cols[3] : cols[2], 10) || 0;
+      const won = parseInt(firstIsNum ? cols[4] : cols[3], 10) || 0;
+      const lost = parseInt(firstIsNum ? cols[5] : cols[4], 10) || 0;
+      const pf = parseInt(firstIsNum ? cols[6] : cols[5], 10) || 0;
+      const ps = parseInt(firstIsNum ? cols[7] : cols[6], 10) || 0;
 
       if (
         team &&
@@ -97,7 +115,7 @@ function parseStandings($) {
         !team.includes("Sede:") &&
         !team.includes("Campo da gioco:") &&
         !isNaN(points) &&
-        standings.length < 16
+        standings.length < 18
       ) {
         standings.push({
           position: firstIsNum ? parseInt(cols[0], 10) : standings.length + 1,
@@ -106,9 +124,9 @@ function parseStandings($) {
           played,
           won,
           lost,
-          pf: !isNaN(pfCol) ? pfCol : 0,
-          ps: !isNaN(psCol) ? psCol : 0,
-          diff: !isNaN(pfCol) && !isNaN(psCol) ? pfCol - psCol : 0,
+          pf,
+          ps,
+          diff: pf - ps,
           isCmb: isCmbTeam(team)
         });
       }
@@ -276,175 +294,100 @@ function parseMatches(tokens, roundLabel, roundKey) {
   return matches;
 }
 
-function detectArCodes($) {
-  let andataCode = "1";
-  let ritornoCode = "R";
+function buildFullRoundsList($, teamsCount) {
+  const map = new Map();
+  let maxRoundFound = teamsCount > 2 ? teamsCount - 1 : 11;
 
-  // Ispeziona link e opzioni della pagina FIP per rilevare la codifica esatta
-  $("a, option").each((_, el) => {
-    const text = $(el).text().toLowerCase();
+  $("a[href*='giornata='], option[value*='giornata=']").each((_, el) => {
     const href = $(el).attr("href") || $(el).attr("value") || "";
-    const m = href.match(/codice_ar=([^&]+)/i);
-    if (m) {
-      const code = m[1].trim();
-      if (/ritorno/i.test(text)) {
-        ritornoCode = code;
-      } else if (/andata/i.test(text)) {
-        andataCode = code;
-      }
+    const arMatch = href.match(/codice_ar=([^&]+)/);
+    const gMatch = href.match(/giornata=(\d+)/);
+    if (gMatch) {
+      const ar = arMatch ? arMatch[1] : "1";
+      const g = parseInt(gMatch[1], 10);
+      if (g > maxRoundFound) maxRoundFound = g;
+      const key = `${ar}-${g}`;
+      const fase = ar === "2" || ar.toUpperCase() === "R" ? "Ritorno" : "Andata";
+      map.set(key, {
+        key,
+        codice_ar: ar,
+        giornata: g,
+        label: `Giornata ${g} (${fase})`
+      });
     }
   });
 
-  return { andataCode, ritornoCode };
-}
-
-function buildRoundsList($) {
-  const { andataCode, ritornoCode } = detectArCodes($);
-  const rounds = [];
-
-  // 11 Giornate di Andata
-  for (let g = 1; g <= 11; g++) {
-    rounds.push({
-      key: `A-${g}`,
-      codice_ar: andataCode || "1",
-      giornata: g,
-      order: 100 + g,
-      label: `Giornata ${g} (Andata)`
-    });
-  }
-
-  // 11 Giornate di Ritorno (codice federale 'R')
-  for (let g = 1; g <= 11; g++) {
-    rounds.push({
-      key: `R-${g}`,
-      codice_ar: ritornoCode || "R",
-      giornata: g,
-      order: 200 + g,
-      label: `Giornata ${g} (Ritorno)`
-    });
-  }
-
-  return rounds;
-}
-
-async function fetchRoundMatches(r) {
-  let url = `${BASE_FIP_URL}&codice_ar=${r.codice_ar}&giornata=${r.giornata}`;
-  let html = await fetchHtml(url);
-  let $ = cheerio.load(html);
-  let tokens = getTokens($);
-  let matches = parseMatches(tokens, r.label, r.key);
-
-  // Fallback automatico se FIP risponde vuoto sul codice Ritorno
-  if (matches.length === 0 && r.key.startsWith("R-")) {
-    const fallbacks = ["R", "r", "2"].filter((c) => c !== r.codice_ar);
-    for (const alt of fallbacks) {
-      try {
-        const altUrl = `${BASE_FIP_URL}&codice_ar=${alt}&giornata=${r.giornata}`;
-        const altHtml = await fetchHtml(altUrl);
-        const alt$ = cheerio.load(altHtml);
-        const altTokens = getTokens(alt$);
-        const altMatches = parseMatches(altTokens, r.label, r.key);
-        if (altMatches.length > 0) {
-          return altMatches;
-        }
-      } catch (_) {}
+  for (const ar of ["1", "2"]) {
+    const fase = ar === "2" ? "Ritorno" : "Andata";
+    for (let g = 1; g <= maxRoundFound; g++) {
+      const key = `${ar}-${g}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          codice_ar: ar,
+          giornata: g,
+          label: `Giornata ${g} (${fase})`
+        });
+      }
     }
   }
 
-  return matches;
+  return Array.from(map.values()).sort((a, b) => {
+    if (a.codice_ar !== b.codice_ar) return a.codice_ar.localeCompare(b.codice_ar);
+    return a.giornata - b.giornata;
+  });
 }
 
 function enrichStandingsWithMatches(standings, allMatches) {
-  const statsByTeam = {};
-
-  const ensureTeam = (name) => {
-    const k = normalizeTeamKey(name);
-    if (!statsByTeam[k]) {
-      statsByTeam[k] = {
-        pf: 0,
-        ps: 0,
-        playedCount: 0,
-        homeWon: 0,
-        homeLost: 0,
-        awayWon: 0,
-        awayLost: 0,
-        form: []
-      };
-    }
-    return statsByTeam[k];
-  };
-
-  const playedSorted = allMatches
+  const playedMatches = allMatches
     .filter((m) => m.played && m.homeScore !== null && m.awayScore !== null)
     .sort((a, b) => a.dateNum - b.dateNum);
 
-  for (const m of playedSorted) {
-    const hStat = ensureTeam(m.homeTeam);
-    const aStat = ensureTeam(m.awayTeam);
+  return standings.map((row) => {
+    let calcPf = 0;
+    let calcPs = 0;
+    let homeW = 0;
+    let homeL = 0;
+    let awayW = 0;
+    let awayL = 0;
+    const history = [];
 
-    hStat.pf += m.homeScore;
-    hStat.ps += m.awayScore;
-    hStat.playedCount++;
+    for (const m of playedMatches) {
+      const isHome = isSameTeam(m.homeTeam, row.team);
+      const isAway = isSameTeam(m.awayTeam, row.team);
+      if (!isHome && !isAway) continue;
 
-    aStat.pf += m.awayScore;
-    aStat.ps += m.homeScore;
-    aStat.playedCount++;
+      const myScore = isHome ? m.homeScore : m.awayScore;
+      const oppScore = isHome ? m.awayScore : m.homeScore;
+      calcPf += myScore;
+      calcPs += oppScore;
 
-    const homeWin = m.homeScore > m.awayScore;
-    if (homeWin) {
-      hStat.homeWon++;
-      aStat.awayLost++;
-    } else {
-      hStat.homeLost++;
-      aStat.awayWon++;
+      const won = myScore > oppScore;
+      if (isHome) {
+        if (won) homeW++;
+        else homeL++;
+      } else {
+        if (won) awayW++;
+        else awayL++;
+      }
+
+      history.push({
+        result: won ? "W" : "L",
+        score: `${m.homeScore}-${m.awayScore}`
+      });
     }
 
-    hStat.form.push({
-      result: homeWin ? "W" : "L",
-      score: `${m.homeScore}-${m.awayScore}`,
-      opponent: m.awayTeam,
-      date: m.date,
-      isHome: true
-    });
-
-    aStat.form.push({
-      result: !homeWin ? "W" : "L",
-      score: `${m.awayScore}-${m.homeScore}`,
-      opponent: m.homeTeam,
-      date: m.date,
-      isHome: false
-    });
-  }
-
-  return standings.map((row) => {
-    const k = normalizeTeamKey(row.team);
-    const calc = statsByTeam[k] || {
-      pf: 0,
-      ps: 0,
-      playedCount: 0,
-      homeWon: 0,
-      homeLost: 0,
-      awayWon: 0,
-      awayLost: 0,
-      form: []
-    };
-
-    const pf = row.pf > 0 ? row.pf : calc.pf;
-    const ps = row.ps > 0 ? row.ps : calc.ps;
-    const games = row.played > 0 ? row.played : calc.playedCount;
-    const ppg = games > 0 ? Number((pf / games).toFixed(1)) : 0;
-    const oppg = games > 0 ? Number((ps / games).toFixed(1)) : 0;
+    const pf = row.pf > 0 ? row.pf : calcPf;
+    const ps = row.ps > 0 ? row.ps : calcPs;
 
     return {
       ...row,
       pf,
       ps,
       diff: pf - ps,
-      ppg,
-      oppg,
-      homeRecord: `${calc.homeWon}-${calc.homeLost}`,
-      awayRecord: `${calc.awayWon}-${calc.awayLost}`,
-      last5: calc.form.slice(-5)
+      homeRecord: `${homeW}-${homeL}`,
+      awayRecord: `${awayW}-${awayL}`,
+      last5: history.slice(-5)
     };
   });
 }
@@ -470,26 +413,53 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const requestedTeam = (req.query.team || "DR4").toUpperCase();
+    const teamConfig = TEAMS_CONFIG[requestedTeam] || TEAMS_CONFIG.DR4;
     const forceRefresh = req.query.force === "1";
     const now = Date.now();
 
-    if (!forceRefresh && CACHE.data && now - CACHE.timestamp < 180 * 1000) {
-      return res.status(200).json(CACHE.data);
+    const availableTeams = Object.values(TEAMS_CONFIG).map((t) => ({
+      id: t.id,
+      label: t.label,
+      subtitle: t.subtitle,
+      configured: Boolean(t.url && t.url.trim())
+    }));
+
+    if (!teamConfig.url || !teamConfig.url.trim()) {
+      return res.status(200).json({
+        ok: false,
+        notConfigured: true,
+        teamId: teamConfig.id,
+        teamSubtitle: teamConfig.subtitle,
+        availableTeams,
+        error: `Il link FIP per la squadra ${teamConfig.label} non è ancora stato inserito in api/fip.js.`
+      });
     }
 
-    const initialHtml = await fetchHtml(BASE_FIP_URL);
+    const cachedEntry = CACHE[teamConfig.id];
+    if (!forceRefresh && cachedEntry && now - cachedEntry.timestamp < 120 * 1000) {
+      return res.status(200).json(cachedEntry.data);
+    }
+
+    const initialHtml = await fetchHtml(teamConfig.url);
     const $initial = cheerio.load(initialHtml);
     const rawStandings = parseStandings($initial);
-    const availableRounds = buildRoundsList($initial);
+    const availableRounds = buildFullRoundsList($initial, rawStandings.length);
 
     const allMatches = [];
     const seenKeys = new Set();
-    const batchSize = 11;
+    const batchSize = 8;
 
     for (let i = 0; i < availableRounds.length; i += batchSize) {
       const batch = availableRounds.slice(i, i + batchSize);
       const results = await Promise.allSettled(
-        batch.map((r) => fetchRoundMatches(r))
+        batch.map(async (r) => {
+          const url = `${teamConfig.url}&codice_ar=${r.codice_ar}&giornata=${r.giornata}`;
+          const html = await fetchHtml(url);
+          const $ = cheerio.load(html);
+          const tokens = getTokens($);
+          return parseMatches(tokens, r.label, r.key);
+        })
       );
 
       for (const resItem of results) {
@@ -507,14 +477,11 @@ module.exports = async (req, res) => {
 
     const standings = enrichStandingsWithMatches(rawStandings, allMatches);
     const todayNum = getTodayRomeNum();
+    const cmbMatches = allMatches.filter((m) => m.isCmb);
 
-    const cmbMatches = allMatches
-      .filter((m) => m.isCmb)
+    const upcomingCmb = cmbMatches
+      .filter((m) => !m.played && m.dateNum >= todayNum)
       .sort((a, b) => a.dateNum - b.dateNum);
-
-    const upcomingCmb = cmbMatches.filter(
-      (m) => !m.played && m.dateNum >= todayNum
-    );
 
     const nextCmbMatch =
       upcomingCmb[0] ||
@@ -522,25 +489,35 @@ module.exports = async (req, res) => {
       cmbMatches[cmbMatches.length - 1] ||
       null;
 
+    const playedCmb = cmbMatches
+      .filter((m) => m.played)
+      .sort((a, b) => b.dateNum - a.dateNum);
+    const lastCmbMatch = playedCmb[0] || null;
+
     const currentRoundKey = nextCmbMatch
       ? nextCmbMatch.roundKey
-      : availableRounds[0]?.key || "A-1";
+      : availableRounds[0]?.key || "1-1";
 
     const payload = {
       ok: true,
+      teamId: teamConfig.id,
+      teamLabel: teamConfig.label,
+      teamSubtitle: teamConfig.subtitle,
+      availableTeams,
       updatedAt: new Date().toLocaleString("it-IT", {
         timeZone: "Europe/Rome"
       }),
       todayNum,
       currentRoundKey,
       nextCmbMatch,
+      lastCmbMatch,
       upcomingCmbMatches: upcomingCmb.slice(0, 6),
       availableRounds,
       standings,
       matches: allMatches
     };
 
-    CACHE = { timestamp: now, data: payload };
+    CACHE[teamConfig.id] = { timestamp: now, data: payload };
     return res.status(200).json(payload);
   } catch (error) {
     return res.status(500).json({
