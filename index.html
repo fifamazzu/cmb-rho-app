@@ -360,33 +360,22 @@
     // ====================================================
     // 1. CONDIVISIONE PROMEMORIA PARTITA SU WHATSAPP
     // ====================================================
-    function shareMatchOnWhatsApp(matchId) {
-      const m = matchId
-        ? state.matches.find(x => x.id === matchId)
-        : state.nextCmbMatch;
+    function shareMatchWhatsApp(matchId) {
+      const m = matchId ? state.matches.find(x => x.id === matchId) : state.nextCmbMatch;
       if (!m) return;
-
       const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.gym)}`;
-      const isPlayed = m.played && m.homeScore !== null && m.awayScore !== null;
 
-      const lines = [
-        isPlayed ? `🏀 *RISULTATO FINALE — C.M.B. RHO 1969*` : `🏀 *PROMEMORIA GARA — C.M.B. RHO 1969*`,
-        `🏆 DR4 Girone K • ${m.round}`,
-        ``,
-        isPlayed
-          ? `⚔️ *${m.homeTeam} ${m.homeScore} - ${m.awayScore} ${m.awayTeam}*`
-          : `⚔️ *${m.homeTeam} vs ${m.awayTeam}* (${m.isCmbHome ? "In Casa" : "Trasferta"})`,
-        `📅 Data: *${formatFullDayHeader(m.date)}*`,
-        `🕘 Orario: *Ore ${m.time}*`,
-        `📍 Palestra: *${m.gym}*`,
-        `🎽 Arbitri: ${m.referees.join(" • ")}`,
-        ``,
-        `🧭 *Naviga con Google Maps:*`,
+      const text = [
+        `DR4 Girone K • ${m.round}`,
+        `*${m.homeTeam} vs ${m.awayTeam}*`,
+        `Data: *${formatFullDayHeader(m.date)}*`,
+        `Orario: *Ore ${m.time}*`,
+        `Palestra: *${m.gym}*`,
+        `*Naviga con Google Maps:*`,
         mapsUrl
-      ];
+      ].join("\n");
 
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
-      window.open(waUrl, "_blank");
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     }
 
     // ====================================================
