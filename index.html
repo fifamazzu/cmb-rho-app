@@ -107,6 +107,22 @@
     <section id="tab-calendar" class="hidden space-y-4">
       <div id="calendarHeroBox"></div>
 
+      <!-- BANNER SINCRONIZZA INTERA STAGIONE (.ICS) -->
+      <div class="bg-[#0F0F11] text-white rounded-3xl p-4 shadow-md border border-zinc-800 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-2xl bg-[#CC2918]/20 border border-[#CC2918]/40 text-[#CC2918] flex items-center justify-center text-lg shrink-0">
+            📲
+          </div>
+          <div class="min-w-0">
+            <h3 class="text-xs font-extrabold text-white truncate">Salva tutte le partite nel Telefono</h3>
+            <p class="text-[11px] text-zinc-400 truncate">Esporta l'intero calendario C.M.B. (<span id="icsTeamLabel">DR4</span>)</p>
+          </div>
+        </div>
+        <button onclick="downloadAllCmbMatchesICS()" class="bg-[#CC2918] hover:bg-red-700 active:scale-95 text-white text-[11px] font-extrabold px-3.5 py-2.5 rounded-2xl shrink-0 shadow-sm transition">
+          Scarica .ics
+        </button>
+      </div>
+
       <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200/80 grid grid-cols-2 gap-1">
         <button id="calModeMonth" onclick="setCalendarMode('month')" class="py-2 rounded-xl text-xs font-bold bg-[#0F0F11] text-white transition">
           📅 Calendario Squadra
@@ -137,7 +153,7 @@
           <div class="flex items-center justify-between px-1 pt-1">
             <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 font-bold">‹</button>
             <div id="monthLabel" class="bg-gray-100 px-4 py-1.5 rounded-full text-xs font-bold text-gray-800 lowercase">
-              ottobre 2026
+              novembre 2026
             </div>
             <button onclick="changeMonth(1)" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500 font-bold">›</button>
           </div>
@@ -280,7 +296,7 @@
       todayNum: 0,
       calMode: "month",
       leagueFilterMode: "round",
-      monthYear: { year: 2026, month: 9 },
+      monthYear: { year: 2026, month: 10 },
       selectedDateStr: "",
       selectedMonthTeam: "CMB",
       countdownTimer: null
@@ -295,6 +311,8 @@
           ? "px-3 py-1 rounded-full text-[11px] font-extrabold shrink-0 transition bg-[#CC2918] text-white shadow-sm"
           : "px-3 py-1 rounded-full text-[11px] font-bold shrink-0 transition bg-white/10 text-zinc-300 hover:bg-white/15";
       });
+      const icsLbl = document.getElementById("icsTeamLabel");
+      if (icsLbl) icsLbl.innerText = state.teamLabel || state.activeTeamId;
     }
 
     function selectCmbTeam(teamId) {
@@ -322,7 +340,7 @@
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank");
     }
 
-    // Condivisione WhatsApp pulita esattamente nel formato richiesto
+    // Condivisione WhatsApp pulita
     function shareMatchWhatsApp(matchId) {
       const m = matchId ? state.matches.find(x => x.id === matchId) : state.nextCmbMatch;
       if (!m) return;
@@ -341,6 +359,125 @@
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     }
 
+    // ============================================================================
+    // ESPORTAZIONE CALENDARIO (.ICS) PER SINGOLA GARA E INTERA STAGIONE
+    // ============================================================================
+    function escapeIcsText(str) {
+      return (str || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/;/g, "\\;")
+        .replace(/,/g, "\\,")
+        .replace(/\r?\n/g, "\\n");
+    }
+
+    function buildIcsEventBlock(m) {
+      if (!m || !m.date || !m.date.includes("/")) return null;
+      const [dd, mm, yyyy] = m.date.split("/").map(Number);
+      const [hh, min] = m.time && m.time.includes(":")
+        ? m.time.split(":").map(Number)
+        : [21, 0];
+
+      const pad = (n) => String(n).padStart(2, "0");
+      const dtStart = `${yyyy}${pad(mm)}${pad(dd)}T${pad(hh)}${pad(min)}00`;
+
+      // Durata standard partita: 2 ore
+      const endObj = new Date(yyyy, mm - 1, dd, hh + 2, min, 0);
+      const dtEnd = `${endObj.getFullYear()}${pad(endObj.getMonth() + 1)}${pad(endObj.getDate())}T${pad(endObj.getHours())}${pad(endObj.getMinutes())}00`;
+      const dtStamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+      const summary = `🏀 [${state.teamLabel}] ${m.homeTeam} vs ${m.awayTeam}`;
+      const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.gym)}`;
+      const descLines = [
+        `${state.teamSubtitle} - ${m.round}`,
+        `Partita: ${m.homeTeam} vs ${m.awayTeam}`,
+        `Orario: Ore ${m.time}`,
+        `Campo: ${m.gym}`,
+        `Arbitri: ${(m.referees || []).join(" • ")}`,
+        `Google Maps: ${mapsUrl}`
+      ];
+
+      const uid = `cmb-rho-${state.activeTeamId}-${(m.id || "").replace(/[^a-zA-Z0-9]/g, "")}@cmbrho1969.it`;
+
+      return [
+        "BEGIN:VEVENT",
+        `UID:${uid}`,
+        `DTSTAMP:${dtStamp}`,
+        `DTSTART;TZID=Europe/Rome:${dtStart}`,
+        `DTEND;TZID=Europe/Rome:${dtEnd}`,
+        `SUMMARY:${escapeIcsText(summary)}`,
+        `LOCATION:${escapeIcsText(m.gym)}`,
+        `DESCRIPTION:${escapeIcsText(descLines.join("\n"))}`,
+        "BEGIN:VALARM",
+        "TRIGGER:-PT90M",
+        "ACTION:DISPLAY",
+        `DESCRIPTION:Promemoria Partita ${escapeIcsText(m.homeTeam)} vs ${escapeIcsText(m.awayTeam)}`,
+        "END:VALARM",
+        "END:VEVENT"
+      ].join("\r\n");
+    }
+
+    function triggerIcsDownload(icsContent, filename) {
+      const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    function downloadSingleMatchICS(matchId) {
+      const m = matchId ? state.matches.find(x => x.id === matchId) : state.nextCmbMatch;
+      if (!m) return;
+      const eventBlock = buildIcsEventBlock(m);
+      if (!eventBlock) {
+        alert("Data della partita non ancora definita dalla FIP.");
+        return;
+      }
+
+      const icsFile = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//C.M.B. RHO 1969//App Ufficiale//IT",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        eventBlock,
+        "END:VCALENDAR"
+      ].join("\r\n");
+
+      const cleanName = `${state.activeTeamId}-${m.homeTeam}-vs-${m.awayTeam}`
+        .replace(/[^a-zA-Z0-9_-]/g, "_")
+        .slice(0, 45);
+      triggerIcsDownload(icsFile, `${cleanName}.ics`);
+    }
+
+    function downloadAllCmbMatchesICS() {
+      const cmbMatches = state.matches
+        .filter(m => m.isCmb && m.date && m.date.includes("/"))
+        .sort((a, b) => a.dateNum - b.dateNum);
+
+      if (cmbMatches.length === 0) {
+        alert("Nessuna partita con data definita disponibile per l'esportazione.");
+        return;
+      }
+
+      const blocks = cmbMatches.map(m => buildIcsEventBlock(m)).filter(Boolean);
+      const icsFile = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        `X-WR-CALNAME:C.M.B. RHO 1969 (${state.teamLabel})`,
+        "PRODID:-//C.M.B. RHO 1969//App Ufficiale//IT",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        ...blocks,
+        "END:VCALENDAR"
+      ].join("\r\n");
+
+      triggerIcsDownload(icsFile, `Calendario_CMB_RHO_${state.activeTeamId}.ics`);
+    }
+
     function normalizeKey(str) {
       return (str || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     }
@@ -350,6 +487,11 @@
       const ka = normalizeKey(a);
       const kb = normalizeKey(b);
       return ka === kb || ka.includes(kb) || kb.includes(ka);
+    }
+
+    function findStandingRowForTeam(teamName) {
+      if (!teamName || !state.standings.length) return null;
+      return state.standings.find(s => isSameTeam(s.team, teamName)) || null;
     }
 
     function formatLongDate(dateStr) {
@@ -405,22 +547,17 @@
 
       return `
         <div class="hero-card-cmb text-white rounded-3xl p-5 shadow-xl relative overflow-hidden">
-          <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse shadow-[0_0_8px_#fff]"></span>
               <span class="text-[11px] font-extrabold uppercase tracking-widest text-zinc-200">Prossima • ${state.teamLabel}</span>
             </div>
-            <div class="flex items-center gap-1.5">
-              <button onclick="shareMatchWhatsApp('${safeId}')" class="glass-box hover:bg-white/20 text-white text-[10px] font-bold px-2.5 py-1 rounded-full transition">
-                Condividi WA
-              </button>
-              <span class="glass-box text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider">
-                ${badgeText}
-              </span>
-            </div>
+            <span class="glass-box text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider">
+              ${badgeText}
+            </span>
           </div>
 
-          <div class="flex items-center gap-4 my-5">
+          <div class="flex items-center gap-4 my-4">
             <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#CC2918] to-amber-600 p-0.5 shrink-0 shadow-lg">
               <div class="w-full h-full rounded-full bg-[#151518] flex items-center justify-center text-3xl">
                 🏀
@@ -445,6 +582,148 @@
               <div class="text-[11px] text-zinc-400 font-medium mt-1">${formatLongDate(m.date)}</div>
             </div>
           </div>
+
+          <!-- AZIONI RAPIDE: WHATSAPP + AGGIUNGI AL CALENDARIO (.ICS) -->
+          <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-white/10">
+            <button onclick="shareMatchWhatsApp('${safeId}')" class="glass-box hover:bg-white/15 active:scale-95 text-white text-[11px] font-bold py-2.5 px-3 rounded-2xl flex items-center justify-center gap-1.5 transition">
+              <span>📲</span>
+              <span>Condividi WA</span>
+            </button>
+            <button onclick="downloadSingleMatchICS('${safeId}')" class="glass-box hover:bg-white/15 active:scale-95 text-white text-[11px] font-bold py-2.5 px-3 rounded-2xl flex items-center justify-center gap-1.5 transition">
+              <span>📅</span>
+              <span>Aggiungi al Cal</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // Costruisce la Card "Testa a Testa (Scouting Pre-Partita)"
+    function buildHeadToHeadCardHtml(m, cmbRow) {
+      if (!m) return "";
+      const opponentName = m.isCmbHome ? m.awayTeam : m.homeTeam;
+      const oppRow = findStandingRowForTeam(opponentName);
+
+      if (!cmbRow && !oppRow) return "";
+
+      const cmbPpg = cmbRow && cmbRow.ppg ? cmbRow.ppg : (cmbRow && cmbRow.played > 0 ? Number((cmbRow.pf / cmbRow.played).toFixed(1)) : 0);
+      const oppPpg = oppRow && oppRow.ppg ? oppRow.ppg : (oppRow && oppRow.played > 0 ? Number((oppRow.pf / oppRow.played).toFixed(1)) : 0);
+
+      const cmbOppg = cmbRow && cmbRow.oppg ? cmbRow.oppg : (cmbRow && cmbRow.played > 0 ? Number((cmbRow.ps / cmbRow.played).toFixed(1)) : 0);
+      const oppOppg = oppRow && oppRow.oppg ? oppRow.oppg : (oppRow && oppRow.played > 0 ? Number((oppRow.ps / oppRow.played).toFixed(1)) : 0);
+
+      const totalPpg = (cmbPpg + oppPpg) || 1;
+      const cmbPpgPct = Math.min(85, Math.max(15, Math.round((cmbPpg / totalPpg) * 100)));
+
+      const totalOppg = (cmbOppg + oppOppg) || 1;
+      const cmbOppgPct = Math.min(85, Math.max(15, Math.round((cmbOppg / totalOppg) * 100)));
+
+      // Cerca se c'è già stato uno scontro diretto giocato in stagione
+      const previousMeeting = state.matches.find(x =>
+        x.played &&
+        x.isCmb &&
+        (isSameTeam(x.homeTeam, opponentName) || isSameTeam(x.awayTeam, opponentName))
+      );
+
+      let prevHtml = "";
+      if (previousMeeting) {
+        const cmbScore = previousMeeting.isCmbHome ? previousMeeting.homeScore : previousMeeting.awayScore;
+        const oppScore = previousMeeting.isCmbHome ? previousMeeting.awayScore : previousMeeting.homeScore;
+        const wonPrev = cmbScore > oppScore;
+        const diffPrev = cmbScore - oppScore;
+        prevHtml = `
+          <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+            <span class="text-gray-400 font-semibold">Precedente (${previousMeeting.round}):</span>
+            <span class="font-extrabold ${wonPrev ? 'text-emerald-600' : 'text-[#CC2918]'}">
+              ${wonPrev ? 'Vinta' : 'Persa'} ${previousMeeting.homeScore}-${previousMeeting.awayScore} (${diffPrev > 0 ? `+${diffPrev}` : diffPrev})
+            </span>
+          </div>
+        `;
+      }
+
+      const safeOpp = opponentName.replace(/'/g, "\\'");
+
+      return `
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
+                ⚔️
+              </div>
+              <div>
+                <h3 class="text-sm font-extrabold text-gray-900">Confronto Diretto</h3>
+                <p class="text-[11px] text-gray-400">Scouting pre-partita • ${state.teamLabel}</p>
+              </div>
+            </div>
+            <button onclick="switchTab('standings')" class="text-[11px] font-bold text-[#CC2918]">
+              Classifica ›
+            </button>
+          </div>
+
+          <!-- Box Posizione e Record -->
+          <div class="grid grid-cols-2 gap-2.5 text-center">
+            <div onclick="openTeamSeason('C.M.B. RHO')" class="bg-red-50/60 border border-[#CC2918]/30 rounded-2xl p-3 cursor-pointer active:scale-95 transition">
+              <div class="text-[10px] font-extrabold uppercase text-[#CC2918] truncate">C.M.B. RHO</div>
+              <div class="text-2xl font-black text-gray-900 my-0.5">
+                ${cmbRow ? `${cmbRow.position}°` : "-"}
+              </div>
+              <div class="text-[11px] font-bold text-gray-600">
+                ${cmbRow ? `${cmbRow.points} PT (${cmbRow.won}V - ${cmbRow.lost}P)` : "-"}
+              </div>
+            </div>
+
+            <div onclick="openTeamSeason('${safeOpp}')" class="bg-gray-50 border border-gray-200/80 rounded-2xl p-3 cursor-pointer active:scale-95 transition">
+              <div class="text-[10px] font-extrabold uppercase text-gray-500 truncate">${opponentName}</div>
+              <div class="text-2xl font-black text-gray-900 my-0.5">
+                ${oppRow ? `${oppRow.position}°` : "-"}
+              </div>
+              <div class="text-[11px] font-bold text-gray-600">
+                ${oppRow ? `${oppRow.points} PT (${oppRow.won}V - ${oppRow.lost}P)` : "-"}
+              </div>
+            </div>
+          </div>
+
+          <!-- Barre comparative Statistiche -->
+          <div class="space-y-3 pt-1">
+            <!-- Media Punti Segnati -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs font-extrabold">
+                <span class="text-[#CC2918]">${cmbPpg}</span>
+                <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Media Punti Fatti (MPP)</span>
+                <span class="text-gray-800">${oppPpg}</span>
+              </div>
+              <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden flex">
+                <div class="bg-[#CC2918] h-full" style="width: ${cmbPpgPct}%"></div>
+                <div class="bg-gray-800 h-full" style="width: ${100 - cmbPpgPct}%"></div>
+              </div>
+            </div>
+
+            <!-- Media Punti Subiti -->
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs font-extrabold">
+                <span class="text-[#CC2918]">${cmbOppg}</span>
+                <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Media Punti Subiti (MSP)</span>
+                <span class="text-gray-800">${oppOppg}</span>
+              </div>
+              <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden flex">
+                <div class="bg-[#CC2918] h-full" style="width: ${cmbOppgPct}%"></div>
+                <div class="bg-gray-800 h-full" style="width: ${100 - cmbOppgPct}%"></div>
+              </div>
+            </div>
+
+            <!-- Differenza Canestri Totale -->
+            <div class="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
+              <span class="font-extrabold ${cmbRow && cmbRow.diff >= 0 ? 'text-emerald-600' : 'text-[#CC2918]'}">
+                ${cmbRow ? (cmbRow.diff > 0 ? `+${cmbRow.diff}` : cmbRow.diff) : "0"}
+              </span>
+              <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Differenza Canestri (+/-)</span>
+              <span class="font-extrabold ${oppRow && oppRow.diff >= 0 ? 'text-emerald-600' : 'text-red-500'}">
+                ${oppRow ? (oppRow.diff > 0 ? `+${oppRow.diff}` : oppRow.diff) : "0"}
+              </span>
+            </div>
+          </div>
+
+          ${prevHtml}
         </div>
       `;
     }
@@ -587,6 +866,7 @@
       container.innerHTML = `
         ${buildHeroCardHtml(m, "homeCountdown")}
 
+        <!-- PALESTRA & GOOGLE MAPS -->
         <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
           <div class="arena-banner p-5 pt-10 text-white relative">
             <span class="absolute top-3.5 right-4 bg-white/15 backdrop-blur-xs text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
@@ -608,6 +888,10 @@
           </button>
         </div>
 
+        <!-- CONFRONTO DIRETTO (TESTA A TESTA) TRA LE DUE SQUADRE -->
+        ${buildHeadToHeadCardHtml(m, cmbRow)}
+
+        <!-- ULTIME 5 PARTITE -->
         <div onclick="openTeamSeason('C.M.B. RHO')" class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-4 cursor-pointer active:scale-[0.99] transition">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -644,15 +928,21 @@
           </div>
         </div>
 
+        <!-- PROSSIMI EVENTI -->
         <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 space-y-2">
-          <div class="flex items-center gap-3 mb-2">
-            <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
-              📅
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
+                📅
+              </div>
+              <div>
+                <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
+                <p class="text-[11px] text-gray-400">Tocca una gara per dettagli o salvataggio</p>
+              </div>
             </div>
-            <div>
-              <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
-              <p class="text-[11px] text-gray-400">Clicca per i dettagli e gli arbitri</p>
-            </div>
+            <button onclick="downloadAllCmbMatchesICS()" class="text-[11px] font-extrabold text-[#CC2918] bg-red-50 px-2.5 py-1.5 rounded-xl">
+              + Tutte in Cal
+            </button>
           </div>
           <div>
             ${renderUpcomingListHtml(state.upcomingCmbMatches)}
@@ -827,14 +1117,19 @@
         .slice(0, 6);
 
       document.getElementById("calendarUpcomingCard").innerHTML = `
-        <div class="flex items-center gap-3 mb-2">
-          <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
-            📅
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-red-50 text-[#CC2918] flex items-center justify-center font-bold text-sm">
+              📅
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
+              <p class="text-[11px] text-gray-400">Clicca per i dettagli</p>
+            </div>
           </div>
-          <div>
-            <h3 class="text-sm font-extrabold text-gray-900">Prossimi Eventi</h3>
-            <p class="text-[11px] text-gray-400">Clicca per i dettagli</p>
-          </div>
+          <button onclick="downloadAllCmbMatchesICS()" class="text-[11px] font-extrabold text-[#CC2918] bg-red-50 px-2.5 py-1.5 rounded-xl">
+            + Tutte in Cal
+          </button>
         </div>
         <div>
           ${renderUpcomingListHtml(upcomingForTeam)}
@@ -862,9 +1157,10 @@
           </div>
           <div class="mt-3 pt-2.5 border-t border-zinc-800/80 text-[11px] text-zinc-300 space-y-1">
             <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(" • ")}</div>
-            <div class="flex items-center justify-between pt-1 gap-2">
+            <div class="flex items-center justify-between pt-1.5 gap-2">
               <span class="text-zinc-400 truncate">📍 ${m.gym}</span>
-              <div class="flex items-center gap-3 shrink-0">
+              <div class="flex items-center gap-2.5 shrink-0">
+                <button onclick="downloadSingleMatchICS('${safeId}')" class="text-zinc-200 hover:text-white font-bold">+Cal 📅</button>
                 ${m.isCmb ? `<button onclick="shareMatchWhatsApp('${safeId}')" class="text-emerald-400 font-bold">WA ↗</button>` : ""}
                 <button onclick="openMaps('${safeGymQuery}')" class="text-[#CC2918] font-bold">Maps ↗</button>
               </div>
@@ -973,12 +1269,15 @@
           <div>📍 <strong>Campo:</strong> ${m.gym}</div>
           <div>🎽 <strong>Arbitri:</strong> ${m.referees.join(" • ")}</div>
         </div>
-        <div class="grid grid-cols-2 gap-2.5">
-          <button onclick="openMaps('${safeGymQuery}')" class="w-full bg-[#CC2918] text-white font-bold text-xs py-3.5 rounded-2xl shadow-md">
-            🧭 Google Maps
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="openMaps('${safeGymQuery}')" class="w-full bg-[#CC2918] text-white font-bold text-xs py-3 rounded-2xl shadow-md">
+            🧭 Maps
           </button>
-          <button onclick="shareMatchWhatsApp('${safeId}')" class="w-full bg-[#0F0F11] text-white font-bold text-xs py-3.5 rounded-2xl shadow-md">
-            📲 Condividi WA
+          <button onclick="downloadSingleMatchICS('${safeId}')" class="w-full bg-gray-900 text-white font-bold text-xs py-3 rounded-2xl shadow-md">
+            📅 +Calendario
+          </button>
+          <button onclick="shareMatchWhatsApp('${safeId}')" class="w-full bg-emerald-600 text-white font-bold text-xs py-3 rounded-2xl shadow-md">
+            📲 WhatsApp
           </button>
         </div>
       `;
@@ -1055,6 +1354,7 @@
           state.teamSubtitle = data.teamSubtitle;
           document.getElementById("headerSubtitle").innerText = data.teamSubtitle;
         }
+        updateTeamPillsUI();
 
         if (!data.ok) {
           throw new Error(data.error || "Errore lettura FIP");
@@ -1064,7 +1364,7 @@
         state.matches = data.matches || [];
         state.nextCmbMatch = data.nextCmbMatch || null;
         state.upcomingCmbMatches = data.upcomingCmbMatches || [];
-        state.todayNum = data.todayNum || 20261030;
+        state.todayNum = data.todayNum || 20261101;
 
         if (!state.selectedDateStr && state.nextCmbMatch && state.nextCmbMatch.date.includes("/")) {
           state.selectedDateStr = state.nextCmbMatch.date;
